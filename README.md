@@ -40,6 +40,11 @@ Copy the widget code again whenever you change your dates or days off.
 
 Android Chrome can install the app but can't add a web app widget. A native Android widget is the next step (a small Kotlin project with a Glance widget).
 
+## App Store and Google Play version
+
+The native iPhone and Android app lives in [`app/`](app/). It's built with React Native (Expo) and has
+real widgets on both phones plus morning reminders. See [`app/README.md`](app/README.md) to build and release it.
+
 ## Files
 
 - `index.html` — the whole app (HTML, CSS, JavaScript; no build step)
