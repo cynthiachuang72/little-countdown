@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Countdown">
+<meta name="theme-color" content="#EDF0F6">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Little Countdown</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: one calm phone column — two countdowns, a growing-baby line, today's little joy, then a timeline of things to look forward to. */
+:root {
+  --bg: #EDF0F6;
+  --surface: #FBFCFE;
+  --ink: #2A3147;
+  --muted: #6B7390;
+  --line: #DCE1EC;
+  --rose: #C9738B;
+  --rose-soft: #F6E3E9;
+  --sage: #5F9274;
+  --sage-soft: #E1EEE6;
+  --sky: #7C8CC4;
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 22px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161A25; --surface: #202535; --ink: #E9ECF4; --muted: #9AA2BC; --line: #2E3448;
+  --rose: #E7A3B6; --rose-soft: #3A2C37; --sage: #9CC4AB; --sage-soft: #26352F; --sky: #A7B3E2;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #161A25; --surface: #202535; --ink: #E9ECF4; --muted: #9AA2BC; --line: #2E3448;
+  --rose: #E7A3B6; --rose-soft: #3A2C37; --sage: #9CC4AB; --sage-soft: #26352F; --sky: #A7B3E2;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+.wrap { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+h1, h2, .num { font-family: var(--font-display); font-weight: 400; text-wrap: balance; margin: 0; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.label { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+header h1 { font-size: 26px; line-height: 1.2; }
+header p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.icon-btn { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.icon-btn svg { width: 20px; height: 20px; stroke: var(--muted); fill: none; stroke-width: 1.8; }
+
+.sample { background: var(--surface); border: 1px dashed var(--sky); border-radius: 16px; padding: 12px 14px; font-size: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.sample button { border: 0; background: var(--sky); color: var(--surface); border-radius: 999px; padding: 6px 14px; font-weight: 700; }
+
+/* Countdowns */
+.counts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.count { border-radius: var(--r); padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.count.baby { background: var(--rose-soft); }
+.count.leave { background: var(--sage-soft); }
+.count .num { font-size: 56px; line-height: 1; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.count.baby .num { color: var(--rose); }
+.count.leave .num { color: var(--sage); }
+.count .unit { font-weight: 700; }
+.count .sub { color: var(--muted); font-size: 13px; }
+
+/* Journey */
+.journey { background: var(--surface); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.grow { display: flex; align-items: center; gap: 14px; }
+.seed-box { flex: none; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; background: var(--bg); }
+.seed { border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--rose-soft), var(--rose)); transition: width .6s, height .6s; }
+.grow-text { min-width: 0; }
+.grow-text strong { font-family: var(--font-display); font-weight: 400; font-size: 20px; display: block; line-height: 1.25; }
+.grow-text span { color: var(--muted); font-size: 14px; }
+.track { position: relative; height: 10px; border-radius: 999px; background: var(--bg); margin: 8px 0 22px; }
+.fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--sky), var(--rose)); }
+.pin { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 3px solid var(--surface); }
+.pin.today { background: var(--ink); }
+.pin.leave { background: var(--sage); }
+.pin-lab { position: absolute; top: 16px; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.tri { display: grid; grid-template-columns: repeat(3, 1fr); font-size: 12px; color: var(--muted); text-align: center; margin-top: -8px; }
+
+/* Joy */
+.joy { background: var(--surface); border-radius: var(--r); padding: 20px 18px 16px; display: flex; flex-direction: column; gap: 12px; position: relative; overflow: hidden; }
+.joy::after { content: ""; position: absolute; right: -40px; top: -40px; width: 140px; height: 140px; border-radius: 50%; background: var(--rose-soft); opacity: .7; pointer-events: none; }
+.joy > * { position: relative; z-index: 1; }
+.joy h2 { font-size: 23px; line-height: 1.3; }
+.joy .from { font-size: 13px; color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 14px; }
+.pill.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.pill.primary[aria-pressed="true"] { background: var(--sage); border-color: var(--sage); }
+.streak { font-size: 13px; color: var(--muted); }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.pop { animation: pop .45s ease; }
+
+/* Timeline */
+section.list { display: flex; flex-direction: column; gap: 10px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sec-head h2 { font-size: 21px; }
+.tl { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--r); }
+.tl li { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--line); }
+.tl li:first-child { border-top: 0; }
+.days { text-align: center; line-height: 1.05; }
+.days b { font-family: var(--font-display); font-weight: 400; font-size: 22px; display: block; font-variant-numeric: tabular-nums; }
+.days small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.tl .t { min-width: 0; }
+.tl .t div { font-weight: 700; overflow-wrap: anywhere; }
+.tl .t span { font-size: 13px; color: var(--muted); }
+.tag { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; letter-spacing: .03em; }
+.tag.auto { background: var(--bg); color: var(--muted); }
+.tag.mine { background: var(--rose-soft); color: var(--rose); }
+.tl li.is-today { background: var(--sage-soft); }
+.tl li.is-today:first-child { border-radius: var(--r) var(--r) 0 0; }
+.del { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px 6px; border-radius: 8px; }
+.empty { padding: 16px; color: var(--muted); font-size: 14px; }
+
+.someday { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 6px 6px 14px; font-size: 14px; font-weight: 600; max-width: 100%; }
+.chip span { overflow-wrap: anywhere; }
+.chip .del { font-size: 16px; }
+
+form.add { background: var(--surface); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 13px; font-weight: 700; color: var(--muted); }
+input[type="text"], input[type="date"] { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px 12px; min-height: 44px; }
+.two { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.off-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 360px) { .off-dates { grid-template-columns: 1fr; } }
+.tag.off { background: var(--sage-soft); color: var(--sage); }
+.tl li.past { opacity: .5; }
+.save-state { text-align: center; font-size: 12px; color: var(--muted); }
+
+/* Settings sheet */
+.sheet-bg { position: fixed; inset: 0; background: rgba(20,24,36,.4); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 480px; background: var(--surface); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; gap: 14px;
+  padding: 22px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); max-height: 90vh; overflow-y: auto; }
+.sheet h2 { font-size: 22px; }
+
+/* Widget view */
+body.widget-mode .app { display: none; }
+.widget-wrap { display: flex; flex-direction: column; gap: 14px; align-items: center; max-width: 460px; margin: 0 auto; }
+.widget { width: 100%; max-width: 340px; aspect-ratio: 1 / 1; border-radius: 30px; background: var(--surface); padding: 20px; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; box-shadow: 0 10px 30px rgba(40,50,80,.12); }
+.w-top { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-weight: 700; }
+.w-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: center; }
+.w-n { border-radius: 18px; padding: 12px; }
+.w-n.baby { background: var(--rose-soft); } .w-n.leave { background: var(--sage-soft); }
+.w-n .num { font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+.w-n.baby .num { color: var(--rose); } .w-n.leave .num { color: var(--sage); }
+.w-n div:last-child { font-size: 12px; font-weight: 700; color: var(--muted); }
+.w-joy { font-size: 14px; line-height: 1.35; font-weight: 600; }
+.w-joy b { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.widget-tip { background: var(--surface); border-radius: 18px; padding: 14px 16px; font-size: 14px; color: var(--muted); max-width: 340px; }
+.widget-tip strong { color: var(--ink); }
+
+@media (max-width: 360px) { .count .num { font-size: 46px; } .w-n .num { font-size: 36px; } }
+@media (prefers-reduced-motion: reduce) { .pop { animation: none; } .seed { transition: none; } }
+</style>
+
+<div class="wrap app">
+  <header>
+    <div>
+      <h1 id="greet">Good morning</h1>
+      <p id="today"></p>
+    </div>
+    <div class="row">
+      <button class="icon-btn" id="openWidget" aria-label="Widget view" title="Widget view">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/></svg>
+      </button>
+      <button class="icon-btn" id="openSettings" aria-label="Your dates" title="Your dates">
+        <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="sample" id="sampleNote" hidden>
+    <span>These are example dates. Add yours to start your countdown.</span>
+    <button id="sampleSet">Set my dates</button>
+  </div>
+
+  <div class="counts">
+    <div class="count baby">
+      <span class="label">Baby arrives</span>
+      <span class="num" id="babyDays">0</span>
+      <span class="unit" id="babyUnit">days</span>
+      <span class="sub" id="babyDate"></span>
+    </div>
+    <div class="count leave">
+      <span class="label">Leave starts</span>
+      <span class="num" id="leaveDays">0</span>
+      <span class="unit" id="leaveUnit">days</span>
+      <span class="sub" id="leaveDate"></span>
+    </div>
+  </div>
+
+  <div class="journey">
+    <div class="grow">
+      <div class="seed-box"><div class="seed" id="seed"></div></div>
+      <div class="grow-text">
+        <strong id="weekLine">Week 21</strong>
+        <span id="sizeLine"></span>
+      </div>
+    </div>
+    <div>
+      <div class="track" id="track">
+        <div class="fill" id="fill"></div>
+      </div>
+      <div class="tri"><span>1st trimester</span><span>2nd</span><span>3rd</span></div>
+    </div>
+  </div>
+
+  <div class="joy" id="joyCard">
+    <span class="label">Today's little joy</span>
+    <h2 id="joyText"></h2>
+    <span class="from" id="joyFrom"></span>
+    <div class="row">
+      <button class="pill primary" id="joyDone" aria-pressed="false">I did it</button>
+      <button class="pill" id="joyNext">Another idea</button>
+    </div>
+    <span class="streak" id="streak"></span>
+  </div>
+
+  <section class="list">
+    <div class="sec-head"><h2>Coming up</h2><span class="label" id="upCount"></span></div>
+    <ul class="tl" id="timeline"></ul>
+  </section>
+
+  <section class="list">
+    <div class="sec-head"><h2>Someday soon</h2><span class="label">no date yet</span></div>
+    <div class="someday" id="someday"></div>
+  </section>
+
+  <section class="list">
+    <div class="sec-head"><h2>Days off before leave</h2><span class="label" id="offCount"></span></div>
+    <ul class="tl" id="offList"></ul>
+    <form class="add" id="offForm">
+      <span class="label">Add a holiday or time off</span>
+      <div class="field">
+        <label for="offLabel">Name</label>
+        <input type="text" id="offLabel" maxlength="60" placeholder="Thanksgiving, PTO, office closed…" required>
+      </div>
+      <div class="off-dates">
+        <div class="field"><label for="offStart">First day off</label><input type="date" id="offStart" required></div>
+        <div class="field"><label for="offEnd">Last day (optional)</label><input type="date" id="offEnd"></div>
+      </div>
+      <div class="row">
+        <button class="pill primary" type="submit">Add day off</button>
+        <button class="pill" type="button" id="addHolidays">Add US public holidays</button>
+      </div>
+      <p class="hint" id="offHint">Weekdays you're off come out of your workday count. Weekends are already left out.</p>
+    </form>
+  </section>
+
+  <form class="add" id="addForm">
+    <span class="label">Add something to look forward to</span>
+    <div class="field">
+      <label for="addTitle">What is it?</label>
+      <input type="text" id="addTitle" maxlength="90" placeholder="Baby shower, new crib arriving, sushi again…" required>
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="addDate">Date (optional)</label>
+        <input type="date" id="addDate">
+      </div>
+      <button class="pill primary" type="submit" style="min-height:44px">Add</button>
+    </div>
+    <p class="hint">Dated plans join the countdown. Undated ones show up as a little joy now and then.</p>
+  </form>
+
+  <div class="save-state" id="saveState"></div>
+</div>
+
+<div class="widget-wrap" id="widgetView" hidden>
+  <div class="widget" id="widget">
+    <div class="w-top"><span id="wDate"></span><span id="wWeek"></span></div>
+    <div class="w-nums">
+      <div class="w-n baby"><div class="num" id="wBaby">0</div><div>days to baby</div></div>
+      <div class="w-n leave"><div class="num" id="wLeave">0</div><div>days to leave</div></div>
+    </div>
+    <div class="w-joy"><b>Today</b><span id="wJoy"></span></div>
+  </div>
+  <div class="widget-tip">
+    <strong>Put it on your home screen.</strong> Open this page in Safari or Chrome, then use Share → Add to Home Screen (iPhone) or the ⋮ menu → Add to Home screen (Android). It opens straight to this view.
+  </div>
+  <button class="pill" id="closeWidget">Back to the full view</button>
+</div>
+
+<div class="sheet-bg" id="sheet" hidden>
+  <form class="sheet" id="settingsForm">
+    <h2>Your dates</h2>
+    <div class="field"><label for="sName">Your name (for the greeting)</label><input type="text" id="sName" maxlength="40" placeholder="Optional"></div>
+    <div class="field"><label for="sDue">Due date</label><input type="date" id="sDue" required></div>
+    <div class="field"><label for="sLeave">Maternity leave starts</label><input type="date" id="sLeave" required></div>
+    <div class="row">
+      <button type="submit" class="pill primary">Save</button>
+      <button type="button" class="pill" id="sCancel">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const DAY = 864e5;
+  const IDEAS = [
+    "Make a playlist of songs you want baby to hear first.",
+    "Take a bump photo in the same spot as last week.",
+    "Write baby a two-line letter about today.",
+    "Order the dessert you have been craving.",
+    "Pick one tiny outfit and hang it where you can see it.",
+    "Take a slow 20-minute walk with no podcast.",
+    "Write down the names you secretly love.",
+    "Book a prenatal massage, or ask for a foot rub.",
+    "Wash and fold a small stack of baby clothes.",
+    "Rewatch a movie you loved as a kid.",
+    "Plan your first meal after the birth.",
+    "Ask someone what you were like as a baby.",
+    "Read a picture book out loud to the bump.",
+    "Take a warm bath with your favorite soap.",
+    "Put fresh flowers by your bed.",
+    "List three things you will not miss about work.",
+    "Start a list of shows for night feeds.",
+    "Have breakfast in bed, even if you make it yourself.",
+    "Try a new smoothie or mocktail.",
+    "Choose the spot for baby's first photo at home.",
+    "Call someone who will be thrilled to hear from you.",
+    "Treat yourself to new cozy socks or slippers.",
+    "Write a first-year wish list: first park, first beach, first snow.",
+    "Do a gentle prenatal stretch.",
+    "Choose a lullaby and learn the words.",
+    "Plan one more date night before baby arrives.",
+    "Pack one thing for your hospital bag.",
+    "Freeze one meal for the early weeks.",
+    "Save a photo of yourself from today. Future you will want it.",
+    "Write a short note for your partner or support person.",
+    "Visit a café you have never tried.",
+    "Hand off one small work task early. Practice letting go.",
+    "Browse the baby books at the library.",
+    "Sit outside for ten minutes and just breathe.",
+    "List who you want baby to meet first.",
+    "Take a nap. It is officially allowed.",
+    "Tidy one shelf in the nursery.",
+    "Put on music and sway with the bump.",
+    "Start an email account for letters to baby.",
+    "Bake something simple that makes the house smell good.",
+    "Look through your own baby photos.",
+    "Pick the outfit baby wears home.",
+    "Write your maternity leave wish list: slow mornings, long walks.",
+    "Ask a friend with kids for their single best tip.",
+    "Write one sentence about how you feel today.",
+    "Have a cozy night in with your favorite takeout.",
+    "Plan a small treat for your last day of work."
+  ];
+  // Size comparisons by week of pregnancy, with a relative dot size for the drawing.
+  const SIZES = {4:"a poppy seed",5:"a sesame seed",6:"a lentil",7:"a blueberry",8:"a raspberry",9:"a cherry",10:"a kumquat",11:"a fig",12:"a lime",13:"a lemon",14:"a peach",15:"an apple",16:"an avocado",17:"a pear",18:"a bell pepper",19:"a mango",20:"a banana",21:"a carrot",22:"a papaya",23:"a grapefruit",24:"an ear of corn",25:"a rutabaga",26:"a head of lettuce",27:"a cauliflower",28:"an eggplant",29:"a butternut squash",30:"a cabbage",31:"a coconut",32:"a jicama",33:"a pineapple",34:"a cantaloupe",35:"a honeydew melon",36:"a head of romaine",37:"a bunch of chard",38:"a leek",39:"a mini watermelon",40:"a small pumpkin",41:"a small pumpkin",42:"a small pumpkin"};
+
+  const SAMPLE = { v: 1, sample: true, name: "", due: "2027-03-14", leave: "2027-02-26",
+    items: [
+      { id: "ex1", title: "Baby shower (example)", date: "2026-12-12" },
+      { id: "ex2", title: "Nursery furniture arrives (example)", date: "2026-11-20" },
+      { id: "ex3", title: "Eat sushi again (example)", date: null }
+    ], joys: {} };
+
+  const $ = (id) => document.getElementById(id);
+  const LS = "little-countdown-v1";
+  let state = loadLocal() || clone(SAMPLE);
+  let store = null; // {ref}
+  let saveTimer = null;
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function loadLocal() { try { const s = localStorage.getItem(LS); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
+
+  function parse(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+  function todayDate() { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function diff(a, b) { return Math.round((b - a) / DAY); }
+  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  const fmt = (d, o) => d.toLocaleDateString(undefined, o || { month: "short", day: "numeric" });
+  function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
+
+  // ---------- persistence ----------
+  function save() {
+    saveLocal();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      if (!store) { setSaveNote("Saved on this device"); return; }
+      try { await store.ref.set(state); setSaveNote("Saved to your account"); }
+      catch (e) { setSaveNote("Saved on this device"); }
+    }, 500);
+  }
+  function setSaveNote(t) { $("saveState").textContent = t; }
+
+  (async function connect() {
+    try {
+      if (!window.claude || !window.claude.use) { setSaveNote("Saved on this device"); return; }
+      const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+      const uid = user ? await user.id() : null;
+      if (!db || !uid) { setSaveNote("Saved on this device"); return; }
+      const ref = db.doc("data/users/" + uid + "/countdown");
+      store = { ref };
+      const t = setTimeout(() => setSaveNote("Couldn't reach your account yet. Showing what's on this device."), 10000);
+      ref.onSnapshot((snap) => {
+        if (!snap.metadata.fromCache) clearTimeout(t);
+        if (snap.exists) {
+          if (!snap.metadata.hasPendingWrites) { state = clone(snap.data()); saveLocal(); render(); }
+          setSaveNote("Saved to your account");
+        } else if (!snap.metadata.fromCache) {
+          setSaveNote(state.sample ? "Your countdown saves to your account once you add your dates" : "Saved on this device");
+        }
+      }, () => { clearTimeout(t); store = null; setSaveNote("Saved on this device"); });
+    } catch (e) { setSaveNote("Saved on this device"); }
+  })();
+
+  // ---------- derived ----------
+  function plural(n, w) { return n === 1 ? w : w + "s"; }
+  function milestones(due, leave, today) {
+    const start = addDays(due, -280);
+    const list = [
+      { d: addDays(start, 140), t: "Halfway there", s: "Week 20" },
+      { d: addDays(start, 196), t: "Third trimester begins", s: "Week 28" },
+      { d: addDays(start, 259), t: "Full term", s: "Week 37" },
+      { d: addDays(due, -100), t: "100 days to go", s: "Triple digits no more" },
+      { d: addDays(due, -50), t: "50 days to go", s: "Halfway through the last hundred" },
+      { d: addDays(leave, -7), t: "Last week of work begins", s: "Seven work-free days ahead after this" },
+      { d: leave, t: "Maternity leave starts", s: "Rest, nest, slow mornings" },
+      { d: due, t: "Due date", s: "Hello, little one" }
+    ];
+    return list.filter(m => diff(today, m.d) >= 0).map(m => ({ ...m, auto: true }));
+  }
+
+  function joyFor(dateKey) {
+    const rec = state.joys[dateKey] || {};
+    const shift = rec.s || 0;
+    const mine = (state.items || []).filter(i => !i.date);
+    const h = hash(dateKey);
+    // Every third suggestion comes from the person's own undated list, when there is one.
+    if (mine.length && (h + shift) % 3 === 0) {
+      const it = mine[(h + shift) % mine.length];
+      return { text: it.title, from: "From your own list" };
+    }
+    return { text: IDEAS[(h + shift * 7) % IDEAS.length], from: "A small thing to look forward to" };
+  }
+
+  function streak(today) {
+    let n = 0, d = today;
+    if (!(state.joys[iso(d)] || {}).d) d = addDays(d, -1);
+    while ((state.joys[iso(d)] || {}).d) { n++; d = addDays(d, -1); }
+    return n;
+  }
+
+  // ---------- render ----------
+  function render() {
+    const today = todayDate();
+    const key = iso(today);
+    const due = parse(state.due), leave = parse(state.leave);
+    const hr = new Date().getHours();
+    const part = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+    $("greet").textContent = state.name ? part + ", " + state.name : part;
+    $("today").textContent = fmt(today, { weekday: "long", month: "long", day: "numeric" });
+    $("sampleNote").hidden = !state.sample;
+
+    const bd = Math.max(0, diff(today, due)), ld = diff(today, leave);
+    $("babyDays").textContent = bd; $("babyUnit").textContent = bd === 0 ? "today could be the day" : plural(bd, "day");
+    $("babyDate").textContent = "Due " + fmt(due) + " · " + Math.floor(bd / 7) + "w " + (bd % 7) + "d";
+    $("leaveDays").textContent = Math.max(0, ld);
+    $("leaveUnit").textContent = ld <= 0 ? "you're on leave" : plural(ld, "day");
+    const wd = countWorkdays(today, leave), workdays = wd.n;
+    $("leaveDate").textContent = ld > 0 ? fmt(leave) + " · " + workdays + " " + plural(workdays, "workday") + (wd.skipped ? " left after " + wd.skipped + " off" : " left") : "since " + fmt(leave);
+
+    // Pregnancy week
+    const start = addDays(due, -280);
+    const elapsed = Math.max(0, diff(start, today));
+    const wk = Math.min(42, Math.floor(elapsed / 7)), dd = elapsed % 7;
+    $("weekLine").textContent = "Week " + wk + (dd ? " + " + dd + (dd === 1 ? " day" : " days") : "");
+    const size = SIZES[Math.max(4, wk)];
+    $("sizeLine").textContent = wk < 4 ? "Very early days" : "Baby is about the size of " + size + ".";
+    const px = Math.round(8 + (Math.min(40, Math.max(4, wk)) - 4) / 36 * 48);
+    $("seed").style.width = px + "px"; $("seed").style.height = px + "px";
+
+    // Track
+    const pct = (d) => Math.min(100, Math.max(0, diff(start, d) / 280 * 100));
+    const track = $("track");
+    track.querySelectorAll(".pin, .pin-lab").forEach(n => n.remove());
+    $("fill").style.width = pct(today) + "%";
+    addPin(track, pct(leave), "leave", "Leave");
+    addPin(track, pct(today), "today", "Today");
+
+    // Joy
+    const j = joyFor(key);
+    $("joyText").textContent = j.text; $("joyFrom").textContent = j.from;
+    const done = !!(state.joys[key] || {}).d;
+    $("joyDone").setAttribute("aria-pressed", done); $("joyDone").textContent = done ? "Done today" : "I did it";
+    const st = streak(today);
+    $("streak").textContent = st > 1 ? st + " days in a row of little joys" : st === 1 ? "One little joy collected" : "";
+
+    // Timeline
+    const mine = (state.items || []).filter(i => i.date && diff(today, parse(i.date)) >= 0)
+      .map(i => ({ d: parse(i.date), t: i.title, s: fmt(parse(i.date), { weekday: "short", month: "short", day: "numeric" }), id: i.id }));
+    const offs = (state.daysOff || []).filter(o => diff(today, parse(o.end || o.start)) >= 0 && parse(o.start) < leave)
+      .map(o => { const s = parse(o.start), n = weekdaysIn(o);
+        return { d: diff(today, s) < 0 ? today : s, t: o.label, s: fmt(s, { weekday: "short", month: "short", day: "numeric" }) + (o.end && o.end !== o.start ? " – " + fmt(parse(o.end)) : "") + " · " + n + " " + plural(n, "workday") + " off", off: true }; });
+    const all = mine.concat(offs, milestones(due, leave, today)).sort((a, b) => a.d - b.d || (a.auto ? 1 : -1));
+    const tl = $("timeline"); tl.textContent = "";
+    if (!all.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "Nothing on the calendar yet. Add something below."; tl.appendChild(li); }
+    all.forEach(e => {
+      const n = diff(today, e.d);
+      const li = document.createElement("li"); if (n === 0) li.className = "is-today";
+      const days = document.createElement("div"); days.className = "days";
+      days.innerHTML = n === 0 ? "<b>✓</b><small>today</small>" : "<b>" + n + "</b><small>" + plural(n, "day") + "</small>";
+      const t = document.createElement("div"); t.className = "t";
+      const a = document.createElement("div"); a.textContent = e.t;
+      const b = document.createElement("span"); b.textContent = e.auto ? fmt(e.d, { weekday: "short", month: "short", day: "numeric" }) + " · " + e.s : e.s;
+      t.append(a, b);
+      let end;
+      if (e.auto || e.off) { end = document.createElement("span"); end.className = e.off ? "tag off" : "tag auto"; end.textContent = e.off ? "day off" : "milestone"; }
+      else { end = delBtn(e.id, e.t); }
+      li.append(days, t, end); tl.appendChild(li);
+    });
+    $("upCount").textContent = all.length + " ahead";
+
+    // Someday
+    const sd = $("someday"); sd.textContent = "";
+    const undated = (state.items || []).filter(i => !i.date);
+    if (!undated.length) { const p = document.createElement("p"); p.className = "hint"; p.textContent = "Add things without a date, like a first glass of wine or a long hot shower in peace."; sd.appendChild(p); }
+    undated.forEach(i => { const c = document.createElement("span"); c.className = "chip"; const s = document.createElement("span"); s.textContent = i.title; c.append(s, delBtn(i.id, i.title)); sd.appendChild(c); });
+
+    // Days off list
+    const ol = $("offList"); ol.textContent = "";
+    const offAll = (state.daysOff || []).slice().sort((a, b) => a.start < b.start ? -1 : 1);
+    ol.hidden = !offAll.length;
+    offAll.forEach(o => {
+      const s = parse(o.start), n = weekdaysIn(o);
+      const li = document.createElement("li"); if (diff(today, parse(o.end || o.start)) < 0 || s >= leave) li.className = "past";
+      const days = document.createElement("div"); days.className = "days";
+      days.innerHTML = "<b>" + n + "</b><small>" + plural(n, "day") + "</small>";
+      const t = document.createElement("div"); t.className = "t";
+      const a = document.createElement("div"); a.textContent = o.label;
+      const b = document.createElement("span"); b.textContent = fmt(s, { weekday: "short", month: "short", day: "numeric" }) + (o.end && o.end !== o.start ? " – " + fmt(parse(o.end), { weekday: "short", month: "short", day: "numeric" }) : "");
+      t.append(a, b);
+      li.append(days, t, delOffBtn(o.id, o.label)); ol.appendChild(li);
+    });
+    $("offCount").textContent = wd.skipped ? wd.skipped + " workdays saved" : "";
+
+    // Widget
+    $("wDate").textContent = fmt(today, { weekday: "short", month: "short", day: "numeric" });
+    $("wWeek").textContent = "Week " + wk;
+    $("wBaby").textContent = bd; $("wLeave").textContent = Math.max(0, ld);
+    $("wJoy").textContent = j.text;
+  }
+
+  function offSet() {
+    const set = new Set();
+    (state.daysOff || []).forEach(o => {
+      const s = parse(o.start), e = o.end ? parse(o.end) : s;
+      for (let d = new Date(s); d <= e && diff(s, d) < 400; d = addDays(d, 1)) set.add(iso(d));
+    });
+    return set;
+  }
+  // Workdays from today (counting today) up to the day before leave, minus weekends and days off.
+  function countWorkdays(from, to) {
+    const off = offSet(); let n = 0, skipped = 0;
+    for (let d = new Date(from); d < to; d = addDays(d, 1)) {
+      const w = d.getDay(); if (w === 0 || w === 6) continue;
+      if (off.has(iso(d))) skipped++; else n++;
+    }
+    return { n, skipped };
+  }
+  function weekdaysIn(o) {
+    const s = parse(o.start), e = o.end ? parse(o.end) : s; let n = 0;
+    for (let d = new Date(s); d <= e && diff(s, d) < 400; d = addDays(d, 1)) { const w = d.getDay(); if (w !== 0 && w !== 6) n++; }
+    return n;
+  }
+  // US federal holidays, moved to Friday/Monday when they fall on a weekend, plus the day after Thanksgiving.
+  function usHolidays(year) {
+    const nth = (m, wd, k) => { const d = new Date(year, m, 1); const off = (wd - d.getDay() + 7) % 7; return new Date(year, m, 1 + off + (k - 1) * 7); };
+    const last = (m, wd) => { const d = new Date(year, m + 1, 0); return addDays(d, -((d.getDay() - wd + 7) % 7)); };
+    const obs = (d) => d.getDay() === 6 ? addDays(d, -1) : d.getDay() === 0 ? addDays(d, 1) : d;
+    const tg = nth(10, 4, 4);
+    return [
+      ["New Year's Day", obs(new Date(year, 0, 1))], ["Martin Luther King Jr. Day", nth(0, 1, 3)], ["Presidents' Day", nth(1, 1, 3)],
+      ["Memorial Day", last(4, 1)], ["Juneteenth", obs(new Date(year, 5, 19))], ["Independence Day", obs(new Date(year, 6, 4))],
+      ["Labor Day", nth(8, 1, 1)], ["Thanksgiving", tg], ["Day after Thanksgiving", addDays(tg, 1)], ["Christmas Day", obs(new Date(year, 11, 25))]
+    ];
+  }
+  function addPin(track, p, cls, lab) {
+    const pin = document.createElement("span"); pin.className = "pin " + cls; pin.style.left = p + "%";
+    const l = document.createElement("span"); l.className = "pin-lab"; l.style.left = Math.min(92, Math.max(8, p)) + "%"; l.textContent = lab;
+    if (cls === "leave") l.style.top = "-22px";
+    track.append(pin, l);
+  }
+  function delBtn(id, title) {
+    const b = document.createElement("button"); b.className = "del"; b.type = "button"; b.textContent = "×"; b.setAttribute("aria-label", "Remove " + title);
+    b.addEventListener("click", () => { state.items = state.items.filter(i => i.id !== id); save(); render(); });
+    return b;
+  }
+
+  function delOffBtn(id, label) {
+    const b = document.createElement("button"); b.className = "del"; b.type = "button"; b.textContent = "×"; b.setAttribute("aria-label", "Remove " + label);
+    b.addEventListener("click", () => { state.daysOff = (state.daysOff || []).filter(o => o.id !== id); save(); render(); });
+    return b;
+  }
+  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  $("offForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const label = $("offLabel").value.trim(), start = $("offStart").value; let end = $("offEnd").value || null;
+    if (!label || !start) return;
+    if (end && end < start) { $("offHint").textContent = "The last day off needs to be on or after the first day."; return; }
+    if (end === start) end = null;
+    state.daysOff = state.daysOff || [];
+    state.daysOff.push({ id: newId("o"), label, start, end });
+    $("offLabel").value = ""; $("offStart").value = ""; $("offEnd").value = "";
+    $("offHint").textContent = "Added. Your workday count is updated.";
+    save(); render();
+  });
+
+  $("addHolidays").addEventListener("click", () => {
+    const today = todayDate(), leave = parse(state.leave);
+    state.daysOff = state.daysOff || [];
+    const have = new Set(state.daysOff.map(o => o.start));
+    let added = 0;
+    for (let y = today.getFullYear(); y <= leave.getFullYear(); y++) {
+      usHolidays(y).forEach(([label, d]) => {
+        const k = iso(d);
+        if (d >= today && d < leave && !have.has(k)) { state.daysOff.push({ id: newId("h"), label, start: k, end: null }); have.add(k); added++; }
+      });
+    }
+    $("offHint").textContent = added ? "Added " + added + " holidays before your leave. Remove any you don't get off." : "Those holidays are already on your list.";
+    save(); render();
+  });
+
+  // ---------- events ----------
+  $("joyDone").addEventListener("click", () => {
+    const k = iso(todayDate()); const rec = state.joys[k] || {}; rec.d = !rec.d; state.joys[k] = rec;
+    pruneJoys(); save(); render();
+    if (rec.d) { const c = $("joyCard"); c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); }
+  });
+  $("joyNext").addEventListener("click", () => {
+    const k = iso(todayDate()); const rec = state.joys[k] || {}; rec.s = (rec.s || 0) + 1; rec.d = false; state.joys[k] = rec; save(); render();
+  });
+  function pruneJoys() {
+    const cut = iso(addDays(todayDate(), -120));
+    Object.keys(state.joys).forEach(k => { if (k < cut) delete state.joys[k]; });
+  }
+
+  $("addForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = $("addTitle").value.trim(); if (!title) return;
+    const date = $("addDate").value || null;
+    state.items = state.items || [];
+    state.items.push({ id: "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title, date });
+    $("addTitle").value = ""; $("addDate").value = "";
+    save(); render();
+  });
+
+  function openSheet() {
+    $("sName").value = state.name || ""; $("sDue").value = state.due; $("sLeave").value = state.leave;
+    $("sheet").hidden = false; $("sDue").focus();
+  }
+  function closeSheet() { $("sheet").hidden = true; }
+  $("openSettings").addEventListener("click", openSheet);
+  $("sampleSet").addEventListener("click", openSheet);
+  $("sCancel").addEventListener("click", closeSheet);
+  $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
+  $("settingsForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!$("sDue").value || !$("sLeave").value) return;
+    if (state.sample) state.items = (state.items || []).filter(i => !i.id.startsWith("ex"));
+    state.name = $("sName").value.trim(); state.due = $("sDue").value; state.leave = $("sLeave").value; state.sample = false;
+    closeSheet(); save(); render();
+  });
+
+  function route() {
+    const w = location.hash === "#widget";
+    document.body.classList.toggle("widget-mode", w);
+    $("widgetView").hidden = !w;
+    window.scrollTo(0, 0);
+  }
+  $("openWidget").addEventListener("click", () => { location.hash = "widget"; });
+  $("closeWidget").addEventListener("click", () => { history.replaceState(null, "", location.pathname + location.search); route(); });
+  window.addEventListener("hashchange", route);
+
+  // Roll over at midnight if the page stays open.
+  setInterval(() => { const k = iso(todayDate()); if (k !== render.last) { render.last = k; render(); } }, 60000);
+  render.last = iso(todayDate());
+
+  route(); render();
+})();
+</script>
+
+</body>
+</html>
