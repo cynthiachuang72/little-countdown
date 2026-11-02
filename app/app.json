@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.cynthiachuang.littlecountdown",
       "appleTeamId": "YOUR_TEAM_ID",
@@ -33,6 +32,12 @@
         "POST_NOTIFICATIONS",
         "SCHEDULE_EXACT_ALARM"
       ]
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9bbd6f68-c9c6-4d38-a19e-63ee637a21ac"
     },
     "plugins": [
       "expo-font",

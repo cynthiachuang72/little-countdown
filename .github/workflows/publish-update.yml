@@ -1,0 +1,103 @@
+# Every push to main that changes the app publishes it to Expo, so you can open the newest version in Expo Go.
+# The link appears on the run's summary page (Actions tab) and in the ci-report branch.
+name: Publish update to Expo
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/publish-update.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: expo-publish
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the Expo token is set
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is missing. Add it in the repo: Settings > Secrets and variables > Actions." | tee report.txt
+            echo "::error::EXPO_TOKEN is missing. Add it in the repo: Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install packages
+        run: |
+          set -o pipefail
+          echo "--- install ---" > report.txt
+          if [ -f package-lock.json ]; then npm ci 2>&1 | tail -15 | tee -a report.txt; else npm install 2>&1 | tail -15 | tee -a report.txt; fi
+          echo "--- expo install --fix ---" >> report.txt
+          npx expo install --fix 2>&1 | tail -20 | tee -a report.txt
+
+      - name: Save the resolved package versions
+        run: |
+          if ! git diff --quiet -- package.json package-lock.json || [ -n "$(git status --porcelain -- package-lock.json)" ]; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add package.json package-lock.json
+            git commit -m "Lock package versions for Expo SDK [skip ci]"
+            git push origin HEAD:main
+          fi
+
+      - name: Type check (informational)
+        continue-on-error: true
+        run: |
+          echo "--- tsc ---" >> report.txt
+          npx tsc --noEmit 2>&1 | head -60 | tee -a report.txt
+
+      - name: Expo doctor (informational)
+        continue-on-error: true
+        run: |
+          echo "--- expo-doctor ---" >> report.txt
+          npx --yes expo-doctor 2>&1 | tail -40 | tee -a report.txt
+
+      # Needed by 'eas update'. Expo Go already has it built in, so the app code does not use it.
+      - run: npx expo install expo-updates
+
+      - name: Publish
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx --yes eas-cli@latest update --branch main --message "${GITHUB_SHA::7}" --non-interactive --json > update.json 2> update.err || { echo "--- eas update failed ---" >> report.txt; tail -40 update.err >> report.txt; cat update.json >> report.txt; cat report.txt; exit 1; }
+          GROUP=$(node -e "const j=JSON.parse(require('fs').readFileSync('update.json','utf8'));const a=Array.isArray(j)?j:[j];console.log(a[0].group)")
+          LINK="exp://u.expo.dev/9bbd6f68-c9c6-4d38-a19e-63ee637a21ac/group/$GROUP"
+          {
+            echo "## Published to Expo"
+            echo ""
+            echo "Open this in Safari on your iPhone to launch it in Expo Go:"
+            echo ""
+            echo '```'
+            echo "$LINK"
+            echo '```'
+            echo ""
+            echo "Or open the project on expo.dev > Updates and tap the newest one."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Published. $LINK" | tee -a report.txt
+
+      - name: Save report to the ci-report branch
+        if: always()
+        run: |
+          mkdir /tmp/report && cp report.txt /tmp/report/report.txt 2>/dev/null || echo "no report (failed before installing)" > /tmp/report/report.txt
+          cd /tmp/report
+          git init -q && git checkout -q -b ci-report
+          git add -A
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -qm "publish report"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-report

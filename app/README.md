@@ -19,6 +19,15 @@ All data stays on the phone.
 | `targets/widget/` | iPhone widget (SwiftUI, WidgetKit) |
 | `app.json`, `eas.json` | App name, IDs, icons, build settings |
 
+## Try it in Expo Go (no computer needed)
+
+Every push to `main` that changes `app/` runs **Publish update to Expo** in GitHub Actions. Open the
+run on the Actions tab: its summary shows an `exp://…` link. Open that link in Safari on your iPhone
+and it launches in Expo Go. You can also open the project on expo.dev → Updates → newest update.
+
+The workflow needs an `EXPO_TOKEN` secret (Settings → Secrets and variables → Actions).
+Widgets don't run in Expo Go; everything else does.
+
 ## Before the first build
 
 1. **Expo account** (free): sign up at expo.dev.
