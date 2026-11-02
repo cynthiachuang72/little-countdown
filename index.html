@@ -3,13 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Little Countdown</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Countdown">
-<meta name="theme-color" content="#EDF0F6">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EDF0F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161A25" media="(prefers-color-scheme: dark)">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Little Countdown</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -159,6 +165,10 @@ body.widget-mode .app { display: none; }
 .w-joy b { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .widget-tip { background: var(--surface); border-radius: 18px; padding: 14px 16px; font-size: 14px; color: var(--muted); max-width: 340px; }
 .widget-tip strong { color: var(--ink); }
+.widget-tip.setup { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.widget-tip ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.widget-tip b { color: var(--ink); }
+.widget-tip code { display: block; width: 100%; background: var(--bg); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 12px; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; font-family: ui-monospace, Menlo, Consolas, monospace; }
 
 @media (max-width: 360px) { .count .num { font-size: 46px; } .w-n .num { font-size: 36px; } }
 @media (prefers-reduced-motion: reduce) { .pop { animation: none; } .seed { transition: none; } }
@@ -287,7 +297,17 @@ body.widget-mode .app { display: none; }
     <div class="w-joy"><b>Today</b><span id="wJoy"></span></div>
   </div>
   <div class="widget-tip">
-    <strong>Put it on your home screen.</strong> Open this page in Safari or Chrome, then use Share → Add to Home Screen (iPhone) or the ⋮ menu → Add to Home screen (Android). It opens straight to this view.
+    <strong>Install the app.</strong> Open the app's web address in Safari on iPhone and tap Share → Add to Home Screen. On Android, open it in Chrome and tap ⋮ → Install app.
+  </div>
+  <div class="widget-tip setup">
+    <strong>Real iPhone widget</strong>
+    <ol>
+      <li>Install the free <b>Scriptable</b> app and add the Little Countdown script to it.</li>
+      <li>Long-press your home or lock screen, add a Scriptable widget, and choose Little Countdown as the script.</li>
+      <li>Paste this code into the widget's Parameter field. Copy it again whenever you change your dates or days off.</li>
+    </ol>
+    <code id="setupCode"></code>
+    <button class="pill primary" id="copySetup" type="button">Copy widget code</button>
   </div>
   <button class="pill" id="closeWidget">Back to the full view</button>
 </div>
@@ -553,7 +573,26 @@ body.widget-mode .app { display: none; }
     $("wWeek").textContent = "Week " + wk;
     $("wBaby").textContent = bd; $("wLeave").textContent = Math.max(0, ld);
     $("wJoy").textContent = j.text;
+    $("setupCode").textContent = setupCode(today, leave);
   }
+
+  // Short text the Scriptable widget reads: d=due;l=leave;n=name;o=day,start~end
+  function setupCode(today, leave) {
+    const clean = (s) => (s || "").replace(/[;=,~]/g, " ").trim();
+    const offs = (state.daysOff || []).filter(o => diff(today, parse(o.end || o.start)) >= 0 && parse(o.start) < leave)
+      .sort((a, b) => a.start < b.start ? -1 : 1).map(o => o.end && o.end !== o.start ? o.start + "~" + o.end : o.start);
+    let c = "d=" + state.due + ";l=" + state.leave;
+    if (state.name) c += ";n=" + clean(state.name);
+    if (offs.length) c += ";o=" + offs.join(",");
+    return c;
+  }
+  $("copySetup").addEventListener("click", () => {
+    const code = $("setupCode").textContent, btn = $("copySetup");
+    const done = (t) => { btn.textContent = t; setTimeout(() => btn.textContent = "Copy widget code", 2000); };
+    const select = () => { const r = document.createRange(); r.selectNodeContents($("setupCode")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(code).then(() => done("Copied"), () => { select(); done("Selected. Tap Copy"); }); }
+    catch (e) { select(); done("Selected. Tap Copy"); }
+  });
 
   function offSet() {
     const set = new Set();
@@ -694,6 +733,23 @@ body.widget-mode .app { display: none; }
   route(); render();
 })();
 </script>
-
+<script>
+// GitHub version only: offer the Scriptable widget script for copying.
+(function () {
+  const box = document.querySelector(".widget-tip.setup"); if (!box) return;
+  fetch("scriptable/Little%20Countdown.js").then(r => r.ok ? r.text() : Promise.reject()).then(code => {
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "pill"; btn.textContent = "Copy widget script";
+    btn.addEventListener("click", () => {
+      const done = (t) => { btn.textContent = t; setTimeout(() => btn.textContent = "Copy widget script", 2500); };
+      try { navigator.clipboard.writeText(code).then(() => done("Copied. Paste it into a new Scriptable script"), () => done("Copy didn't work. Use the link in the README")); }
+      catch (e) { done("Copy didn't work. Use the link in the README"); }
+    });
+    const first = box.querySelector("ol"); box.insertBefore(btn, first.nextSibling);
+  }).catch(() => {});
+})();
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
 </body>
 </html>

@@ -1,20 +1,47 @@
 # Little Countdown
 
-A calm, single-page countdown to baby's arrival and the start of maternity leave.
+A calm countdown to baby's arrival and the start of maternity leave.
 
 - Days until the due date and until leave, with workdays left
 - Pregnancy week with a size comparison and trimester progress bar
 - A "little joy" idea each day, with a streak for the ones you do
 - Your own things to look forward to, dated or "someday"
 - Holidays and PTO that come out of the workday count, with one-tap US public holidays
-- A compact widget view at `index.html#widget` for your home screen
+- A compact widget view at `#widget`
 
-## Run it
+## Turn on the web address
 
-It's one file with no build step. Open `index.html` in any browser.
+Settings → Pages → Deploy from a branch → `main` / `(root)` → Save. After a minute the app lives at
+`https://cynthiachuang72.github.io/little-countdown/`.
 
-To use it on your phone, turn on GitHub Pages (Settings → Pages → Deploy from branch → `main` / root). Then open the Pages link, go to `#widget`, and use Add to Home Screen.
+## Install it as an app
 
-## Where data is saved
+**iPhone:** open the address in Safari → Share → Add to Home Screen.
+**Android:** open the address in Chrome → ⋮ → Install app (or Add to Home screen).
 
-Outside claude.ai, everything is saved in your browser's local storage on that device. Inside the Claude artifact version, it is saved to your Claude account.
+It opens full screen with its own icon and keeps working offline after the first visit.
+Your dates and lists are saved on each phone separately.
+
+## iPhone widget (home and lock screen)
+
+iPhone doesn't let web apps add widgets, so the widget runs in the free [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) app.
+
+1. Install Scriptable.
+2. In Little Countdown, tap the grid icon, then **Copy widget script**. In Scriptable, tap **+**, paste, and name the script `Little Countdown`.
+   (Or open [`scriptable/Little Countdown.js`](scriptable/Little%20Countdown.js), tap Raw, and copy all.)
+3. Long-press your home screen → **+** → Scriptable → pick small or medium → Add Widget.
+   For the lock screen: long-press the lock screen → Customize → Lock Screen → add a Scriptable widget.
+4. Tap the widget while editing → Script: **Little Countdown** → When Interacting: **Open URL** with your app's address.
+5. Back in the app's widget view, tap **Copy widget code** and paste it into the widget's **Parameter** field.
+
+Copy the widget code again whenever you change your dates or days off.
+
+## Android widget
+
+Android Chrome can install the app but can't add a web app widget. A native Android widget is the next step (a small Kotlin project with a Glance widget).
+
+## Files
+
+- `index.html` — the whole app (HTML, CSS, JavaScript; no build step)
+- `manifest.webmanifest`, `sw.js`, `icons/` — install and offline support
+- `scriptable/Little Countdown.js` — the iPhone widget
