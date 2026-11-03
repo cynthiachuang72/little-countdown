@@ -43,7 +43,7 @@ jobs:
         run: |
           set -o pipefail
           echo "--- install ---" > report.txt
-          if [ -f package-lock.json ]; then npm ci 2>&1 | tail -15 | tee -a report.txt; else npm install 2>&1 | tail -15 | tee -a report.txt; fi
+          npm install 2>&1 | tail -15 | tee -a report.txt
           echo "--- expo install --fix ---" >> report.txt
           npx expo install --fix 2>&1 | tail -20 | tee -a report.txt
 

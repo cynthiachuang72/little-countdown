@@ -11,7 +11,7 @@ import { newId, useStore } from "./store";
 import { fonts, usePalette } from "./theme";
 
 export default function Home() {
-  const { c } = usePalette();
+  const { c, f, r, cute } = usePalette();
   const insets = useSafeAreaInsets();
   const { state, update, tick } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -104,7 +104,7 @@ export default function Home() {
           {/* Header */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <T v="title">{greet}</T>
+              <T v="title">{greet}{cute ? " ♡" : ""}</T>
               <T v="small">{fmt(t, { weekday: "long", month: "long", day: "numeric" })}</T>
             </View>
             <IconButton label="Your dates and reminders" onPress={() => setSettingsOpen(true)}>
@@ -121,13 +121,15 @@ export default function Home() {
 
           {/* Countdowns */}
           <View style={{ flexDirection: "row", gap: 12 }}>
-            <Card tone="roseSoft" style={s.count}>
+            <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
+              {cute ? <Sprinkles color={c.rose} seed={1} /> : null}
               <T v="label">Baby arrives</T>
               <T v="display" color="rose">{bd}</T>
               <T v="strong">{bd === 0 ? "today could be the day" : plural(bd, "day")}</T>
               <T v="small">Due {fmt(due)} · {Math.floor(bd / 7)}w {bd % 7}d</T>
             </Card>
-            <Card tone="sageSoft" style={s.count}>
+            <Card tone="sageSoft" style={[s.count, { overflow: "hidden" }]}>
+              {cute ? <Sprinkles color={c.sage} seed={2} /> : null}
               <T v="label">Leave starts</T>
               <T v="display" color="sage">{Math.max(0, ld)}</T>
               <T v="strong">{ld <= 0 ? "you're on leave" : plural(ld, "day")}</T>
@@ -140,7 +142,7 @@ export default function Home() {
           {/* Journey */}
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <View style={[s.seedBox, { backgroundColor: c.bg }]}>
+              <View style={[s.seedBox, { backgroundColor: cute ? c.roseSoft : c.bg }]}>
                 <View style={{ width: preg.dot, height: preg.dot, borderRadius: preg.dot / 2, backgroundColor: c.rose, opacity: 0.85 }} />
               </View>
               <View style={{ flex: 1 }}>
@@ -168,6 +170,8 @@ export default function Home() {
           <Animated.View style={{ transform: [{ scale: pop }] }}>
             <Card style={{ overflow: "hidden" }}>
               <View pointerEvents="none" style={[s.blob, { backgroundColor: c.roseSoft }]} />
+              {cute ? <View pointerEvents="none" style={[s.blob2, { backgroundColor: c.sageSoft }]} /> : null}
+              {cute ? <Sprinkles color={c.sky} seed={3} /> : null}
               <T v="label">Today's little joy</T>
               <T v="h2" style={{ fontSize: 23, lineHeight: 30 }}>{joy.text}</T>
               <T v="small">{joy.mine ? "From your own list" : "A small thing to look forward to"}</T>
@@ -181,14 +185,14 @@ export default function Home() {
 
           {/* Coming up */}
           <Section title="Coming up" right={`${entries.length} ahead`}>
-            <View style={[s.list, { backgroundColor: c.surface }]}>
+            <View style={[s.list, { backgroundColor: c.surface, borderRadius: r }]}>
               {entries.length === 0 ? <T v="small" style={{ padding: 16 }}>Nothing on the calendar yet. Add something below.</T> : null}
               {entries.map((e, i) => {
                 const n = diff(t, e.date);
                 return (
                   <View key={e.key} style={[s.li, { borderTopColor: c.line, borderTopWidth: i ? StyleSheet.hairlineWidth : 0 }, n === 0 && { backgroundColor: c.sageSoft }]}>
                     <View style={s.days}>
-                      <T style={{ fontFamily: fonts.display, fontSize: 22, lineHeight: 30, fontVariant: ["lining-nums", "tabular-nums"] }}>{n === 0 ? "✓" : n}</T>
+                      <T style={{ fontFamily: f.display, fontSize: 22, lineHeight: 30, fontVariant: ["lining-nums", "tabular-nums"] }}>{n === 0 ? "✓" : n}</T>
                       <T v="small" style={{ fontSize: 11 }}>{n === 0 ? "today" : plural(n, "day")}</T>
                     </View>
                     <View style={{ flex: 1 }}>
@@ -242,14 +246,14 @@ export default function Home() {
           {/* Days off */}
           <Section title="Days off before leave" right={wd.skipped ? `${wd.skipped} workdays saved` : ""}>
             {offSorted.length ? (
-              <View style={[s.list, { backgroundColor: c.surface }]}>
+              <View style={[s.list, { backgroundColor: c.surface, borderRadius: r }]}>
                 {offSorted.map((o, i) => {
                   const n = weekdaysIn(o);
                   const past = diff(t, parse(o.end || o.start)) < 0 || parse(o.start) >= leave;
                   return (
                     <View key={o.id} style={[s.li, { borderTopColor: c.line, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: past ? 0.5 : 1 }]}>
                       <View style={s.days}>
-                        <T style={{ fontFamily: fonts.display, fontSize: 22, lineHeight: 30, fontVariant: ["lining-nums", "tabular-nums"] }}>{n}</T>
+                        <T style={{ fontFamily: f.display, fontSize: 22, lineHeight: 30, fontVariant: ["lining-nums", "tabular-nums"] }}>{n}</T>
                         <T v="small" style={{ fontSize: 11 }}>{plural(n, "day")}</T>
                       </View>
                       <View style={{ flex: 1 }}>
@@ -313,6 +317,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <View style={{ gap: 4 }}><T v="small">{label}</T>{children}</View>;
 }
 
+// Little dots of confetti for the Cute look. Positions are fixed per card so they don't jump around.
+const DOTS: Record<number, { top?: number; bottom?: number; right?: number; left?: number; size: number; o: number }[]> = {
+  1: [{ top: 14, right: 16, size: 10, o: 0.55 }, { top: 34, right: 34, size: 6, o: 0.35 }, { bottom: 18, right: 22, size: 14, o: 0.2 }],
+  2: [{ top: 16, right: 18, size: 8, o: 0.45 }, { top: 40, right: 12, size: 12, o: 0.25 }, { bottom: 22, right: 30, size: 6, o: 0.4 }],
+  3: [{ top: 70, right: 26, size: 8, o: 0.5 }, { bottom: 24, right: 60, size: 6, o: 0.35 }, { top: 18, left: 150, size: 5, o: 0.4 }],
+};
+function Sprinkles({ color, seed }: { color: string; seed: number }) {
+  return (
+    <>
+      {DOTS[seed].map((d, i) => (
+        <View key={i} pointerEvents="none"
+          style={{ position: "absolute", top: d.top, bottom: d.bottom, left: d.left, right: d.right, width: d.size, height: d.size, borderRadius: d.size / 2, backgroundColor: color, opacity: d.o }} />
+      ))}
+    </>
+  );
+}
+
 function Legend({ color, text }: { color: string; text: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -330,6 +351,7 @@ const s = StyleSheet.create({
   fill: { position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 5, opacity: 0.8 },
   pin: { position: "absolute", top: -2, width: 14, height: 14, marginLeft: -7, borderRadius: 7, borderWidth: 3 },
   blob: { position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: 70, opacity: 0.7 },
+  blob2: { position: "absolute", left: -30, bottom: -50, width: 110, height: 110, borderRadius: 55, opacity: 0.6 },
   list: { borderRadius: 22, overflow: "hidden" },
   li: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   days: { width: 50, alignItems: "center" },

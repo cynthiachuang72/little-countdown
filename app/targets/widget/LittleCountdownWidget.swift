@@ -12,6 +12,7 @@ struct Snapshot: Codable {
   var name: String
   var off: [String]
   var joys: [String: String]
+  var theme: String?
 }
 
 struct Numbers {
@@ -21,6 +22,7 @@ struct Numbers {
   var week: Int
   var joy: String
   var isExample: Bool
+  var cute: Bool = false
 }
 
 private let dayFormatter: DateFormatter = {
@@ -62,7 +64,7 @@ func numbers(on date: Date) -> Numbers {
   let joy = snap?.joys[dayFormatter.string(from: today)] ?? "Take a slow breath. You're doing great."
 
   return Numbers(babyDays: max(0, days(today, due)), leaveDays: max(0, days(today, leave)),
-                 workdays: workdays, week: week, joy: joy, isExample: snap == nil)
+                 workdays: workdays, week: week, joy: joy, isExample: snap == nil, cute: snap?.theme == "cute")
 }
 
 // MARK: - Timeline
@@ -98,13 +100,20 @@ extension Color {
   static func dyn(_ light: UInt32, _ dark: UInt32) -> Color {
     Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light) })
   }
-  static let ink = dyn(0x2A3147, 0xE9ECF4)
-  static let muted = dyn(0x6B7390, 0x9AA2BC)
-  static let rose = dyn(0xC9738B, 0xE7A3B6)
-  static let roseSoft = dyn(0xF6E3E9, 0x3A2C37)
-  static let sage = dyn(0x5F9274, 0x9CC4AB)
-  static let sageSoft = dyn(0xE1EEE6, 0x26352F)
-  static let surface = dyn(0xFBFCFE, 0x202535)
+}
+
+/// The two looks from the app (Calm and Cute), in light and dark.
+struct Pal {
+  let ink, muted, rose, roseSoft, sage, sageSoft, surface: Color
+  let radius: CGFloat
+  let numberDesign: Font.Design
+
+  static let calm = Pal(ink: .dyn(0x2A3147, 0xE9ECF4), muted: .dyn(0x6B7390, 0x9AA2BC), rose: .dyn(0xC9738B, 0xE7A3B6),
+                        roseSoft: .dyn(0xF6E3E9, 0x3A2C37), sage: .dyn(0x5F9274, 0x9CC4AB), sageSoft: .dyn(0xE1EEE6, 0x26352F),
+                        surface: .dyn(0xFBFCFE, 0x202535), radius: 16, numberDesign: .serif)
+  static let cute = Pal(ink: .dyn(0x5A3B52, 0xFCEAF1), muted: .dyn(0xA27F96, 0xCDAEC3), rose: .dyn(0xF2709A, 0xFF9DBC),
+                        roseSoft: .dyn(0xFFDDE8, 0x4C2E40), sage: .dyn(0x2FA582, 0x7EDBBD), sageSoft: .dyn(0xD6F5EA, 0x21403A),
+                        surface: .dyn(0xFFFFFF, 0x362839), radius: 20, numberDesign: .rounded)
 }
 
 extension UIColor {
@@ -119,23 +128,24 @@ struct Tile: View {
   let soft: Color
   let strong: Color
   let size: CGFloat
+  let p: Pal
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Text("\(num)")
-        .font(.system(size: size, weight: .regular, design: .serif))
+        .font(.system(size: size, weight: p.numberDesign == .rounded ? .bold : .regular, design: p.numberDesign))
         .foregroundStyle(strong)
         .minimumScaleFactor(0.6)
         .lineLimit(1)
         .monospacedDigit()
       Text(label)
         .font(.system(size: 11, weight: .semibold, design: .rounded))
-        .foregroundStyle(Color.muted)
+        .foregroundStyle(p.muted)
         .lineLimit(1)
         .minimumScaleFactor(0.8)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     .padding(10)
-    .background(soft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .background(soft, in: RoundedRectangle(cornerRadius: p.radius, style: .continuous))
   }
 }
 
@@ -145,6 +155,7 @@ struct WidgetView: View {
 
   var body: some View {
     let n = entry.n
+    let p = n.cute ? Pal.cute : Pal.calm
     switch family {
     case .accessoryInline:
       Text("\(n.babyDays) days to baby · \(n.leaveDays) to leave")
@@ -172,29 +183,29 @@ struct WidgetView: View {
         HStack {
           Text(entry.date, format: .dateTime.weekday(.abbreviated).day())
           Spacer()
-          Text("Wk \(n.week)").foregroundStyle(Color.rose)
+          Text("Wk \(n.week)").foregroundStyle(p.rose)
         }
         .font(.system(size: 11, weight: .semibold, design: .rounded))
-        .foregroundStyle(Color.muted)
-        Tile(num: n.babyDays, label: "days to baby", soft: .roseSoft, strong: .rose, size: 30)
-        Tile(num: n.leaveDays, label: "\(n.workdays) workdays left", soft: .sageSoft, strong: .sage, size: 22)
+        .foregroundStyle(p.muted)
+        Tile(num: n.babyDays, label: "days to baby", soft: p.roseSoft, strong: p.rose, size: 30, p: p)
+        Tile(num: n.leaveDays, label: "\(n.workdays) workdays left", soft: p.sageSoft, strong: p.sage, size: 22, p: p)
       }
     default:
       VStack(alignment: .leading, spacing: 8) {
         HStack {
           Text(entry.date, format: .dateTime.weekday(.wide).month(.abbreviated).day())
           Spacer()
-          Text("Week \(n.week)").foregroundStyle(Color.rose)
+          Text("Week \(n.week)").foregroundStyle(p.rose)
         }
         .font(.system(size: 12, weight: .semibold, design: .rounded))
-        .foregroundStyle(Color.muted)
+        .foregroundStyle(p.muted)
         HStack(spacing: 8) {
-          Tile(num: n.babyDays, label: n.babyDays == 1 ? "day to baby" : "days to baby", soft: .roseSoft, strong: .rose, size: 36)
-          Tile(num: n.leaveDays, label: "\(n.workdays) workdays to leave", soft: .sageSoft, strong: .sage, size: 36)
+          Tile(num: n.babyDays, label: n.babyDays == 1 ? "day to baby" : "days to baby", soft: p.roseSoft, strong: p.rose, size: 36, p: p)
+          Tile(num: n.leaveDays, label: "\(n.workdays) workdays to leave", soft: p.sageSoft, strong: p.sage, size: 36, p: p)
         }
         Text(n.isExample ? "Open Little Countdown to add your dates." : "Today: \(n.joy)")
           .font(.system(size: 12, weight: .medium, design: .rounded))
-          .foregroundStyle(Color.ink)
+          .foregroundStyle(p.ink)
           .lineLimit(2)
       }
     }
@@ -206,7 +217,7 @@ struct LittleCountdownWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: Provider()) { entry in
       WidgetView(entry: entry)
-        .containerBackground(Color.surface, for: .widget)
+        .containerBackground(entry.n.cute ? Pal.cute.surface : Pal.calm.surface, for: .widget)
     }
     .configurationDisplayName("Little Countdown")
     .description("Days to baby and to maternity leave, with today's little joy.")

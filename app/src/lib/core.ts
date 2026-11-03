@@ -4,6 +4,7 @@
 export type Item = { id: string; title: string; date: string | null };
 export type DayOff = { id: string; label: string; start: string; end: string | null };
 export type JoyRecord = { s?: number; d?: boolean };
+export type ThemeName = "calm" | "cute";
 
 export type State = {
   v: 1;
@@ -15,6 +16,7 @@ export type State = {
   daysOff: DayOff[];
   joys: Record<string, JoyRecord>;
   reminder: { on: boolean; hour: number; minute: number };
+  theme: ThemeName;
 };
 
 export const SAMPLE: State = {
@@ -31,6 +33,7 @@ export const SAMPLE: State = {
   daysOff: [],
   joys: {},
   reminder: { on: false, hour: 8, minute: 30 },
+  theme: "calm",
 };
 
 export function normalize(raw: unknown): State {
@@ -44,6 +47,7 @@ export function normalize(raw: unknown): State {
     daysOff: Array.isArray(r.daysOff) ? r.daysOff : [],
     joys: r.joys && typeof r.joys === "object" ? r.joys : {},
     reminder: { ...base.reminder, ...(r.reminder || {}) },
+    theme: r.theme === "cute" ? "cute" : "calm",
     v: 1,
   };
 }
@@ -276,6 +280,7 @@ export type Snapshot = {
   name: string;
   off: string[]; // every weekday off from today until leave
   joys: Record<string, string>; // today's little joy for the next 21 days
+  theme: ThemeName;
   updated: string;
 };
 export function snapshot(state: State, t: Date = today()): Snapshot {
@@ -283,7 +288,7 @@ export function snapshot(state: State, t: Date = today()): Snapshot {
   const off = [...offSet(state.daysOff)].filter((k) => { const d = parse(k); return d >= t && d < leave && !isWeekend(d); }).sort();
   const joys: Record<string, string> = {};
   for (let i = 0; i < 21; i++) { const k = iso(addDays(t, i)); joys[k] = joyFor(state, k).text; }
-  return { due: state.due, leave: state.leave, name: state.name, off, joys, updated: new Date().toISOString() };
+  return { due: state.due, leave: state.leave, name: state.name, off, joys, theme: state.theme, updated: new Date().toISOString() };
 }
 /** Numbers shown on a widget for a given day, computed from a snapshot so widgets stay right without the app open. */
 export function widgetNumbers(s: Snapshot, t: Date = today()) {

@@ -8,7 +8,7 @@ export function syncWidgets(state: State): void {
   const nums = widgetNumbers(snapshot(state));
   requestWidgetUpdate({
     widgetName: WIDGET_NAME,
-    renderWidget: () => <CountdownWidget {...nums} sample={state.sample} />,
+    renderWidget: () => <CountdownWidget {...nums} sample={state.sample} cute={state.theme === "cute"} />,
     widgetNotFound: () => {},
   }).catch(() => {});
 }

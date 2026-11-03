@@ -13,7 +13,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     case "WIDGET_RESIZED": {
       const state = await loadState();
       const nums = widgetNumbers(snapshot(state));
-      props.renderWidget(<CountdownWidget {...nums} sample={state.sample} />);
+      props.renderWidget(<CountdownWidget {...nums} sample={state.sample} cute={state.theme === "cute"} />);
       break;
     }
     default:
