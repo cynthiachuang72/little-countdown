@@ -6,6 +6,7 @@ import { Card, DateField, IconButton, Pill, Remove, styles as ui, T, Tag } from 
 import {
   comingUp, countWorkdays, diff, fmt, iso, joyFor, offSet, parse, plural, pregnancy, pruneJoys, streak, today, usHolidays, weekdaysIn,
 } from "./lib/core";
+import { AddAppointment, NextAppointment } from "./Appointments";
 import Settings from "./Settings";
 import { newId, useStore } from "./store";
 import { fonts, usePalette } from "./theme";
@@ -139,6 +140,8 @@ export default function Home() {
             </Card>
           </View>
 
+          <NextAppointment t={t} />
+
           {/* Journey */}
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
@@ -199,7 +202,12 @@ export default function Home() {
                       <T v="strong">{e.title}</T>
                       <T v="small">{e.sub}</T>
                     </View>
-                    {e.kind === "mine" && e.id ? (
+                    {e.kind === "appt" && e.id ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                        <Tag text="appointment" tone="mine" />
+                        <Remove label={e.title} onPress={() => update((x) => ({ ...x, appts: x.appts.filter((a) => a.id !== e.id) }))} />
+                      </View>
+                    ) : e.kind === "mine" && e.id ? (
                       <Remove label={e.title} onPress={() => update((x) => ({ ...x, items: x.items.filter((it) => it.id !== e.id) }))} />
                     ) : (
                       <Tag text={e.kind === "off" ? "day off" : "milestone"} tone={e.kind === "off" ? "off" : "auto"} />
@@ -208,6 +216,11 @@ export default function Home() {
                 );
               })}
             </View>
+          </Section>
+
+          {/* Appointments */}
+          <Section title="Appointments" right={state.appts.length ? `${state.appts.filter((a) => diff(t, parse(a.date)) >= 0).length} upcoming` : ""}>
+            <AddAppointment />
           </Section>
 
           {/* Someday */}

@@ -3,6 +3,8 @@
 
 export type Item = { id: string; title: string; date: string | null };
 export type DayOff = { id: string; label: string; start: string; end: string | null };
+/** A doctor's appointment, scan or class. `time` is "HH:MM" (24-hour) or null. */
+export type Appointment = { id: string; title: string; date: string; time: string | null; place: string };
 export type JoyRecord = { s?: number; d?: boolean };
 export type ThemeName = "calm" | "cute";
 
@@ -14,8 +16,11 @@ export type State = {
   leave: string;
   items: Item[];
   daysOff: DayOff[];
+  appts: Appointment[];
   joys: Record<string, JoyRecord>;
   reminder: { on: boolean; hour: number; minute: number };
+  /** Reminders the evening before and an hour before each appointment. */
+  apptRemind: boolean;
   theme: ThemeName;
 };
 
@@ -31,8 +36,10 @@ export const SAMPLE: State = {
     { id: "ex3", title: "Eat sushi again (example)", date: null },
   ],
   daysOff: [],
+  appts: [{ id: "exa1", title: "OB check-up (example)", date: "2026-11-12", time: "10:30", place: "" }],
   joys: {},
   reminder: { on: false, hour: 8, minute: 30 },
+  apptRemind: true,
   theme: "calm",
 };
 
@@ -45,6 +52,7 @@ export function normalize(raw: unknown): State {
     ...r,
     items: Array.isArray(r.items) ? r.items : base.items,
     daysOff: Array.isArray(r.daysOff) ? r.daysOff : [],
+    appts: Array.isArray(r.appts) ? r.appts : raw && (raw as State).sample === false ? [] : base.appts,
     joys: r.joys && typeof r.joys === "object" ? r.joys : {},
     reminder: { ...base.reminder, ...(r.reminder || {}) },
     theme: r.theme === "cute" ? "cute" : "calm",
@@ -253,8 +261,26 @@ export function pruneJoys(joys: Record<string, JoyRecord>, t: Date) {
   return out;
 }
 
+// ---------- appointments ----------
+export function timeLabel(time: string | null): string {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+/** When an appointment happens; untimed ones count as the start of their day. */
+export function apptAt(a: Appointment): Date {
+  const d = parse(a.date);
+  if (!a.time) return d;
+  const [h, m] = a.time.split(":").map(Number);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
+}
+export function upcomingAppts(state: State, t: Date): Appointment[] {
+  return state.appts.filter((a) => diff(t, parse(a.date)) >= 0).sort((a, b) => apptAt(a).getTime() - apptAt(b).getTime());
+}
+export const APPT_PRESETS = ["OB check-up", "Ultrasound", "Glucose test", "Blood work", "Hospital tour", "Birth class", "Pediatrician"];
+
 // ---------- the "Coming up" list ----------
-export type Entry = { key: string; date: Date; title: string; sub: string; kind: "mine" | "off" | "milestone"; id?: string };
+export type Entry = { key: string; date: Date; title: string; sub: string; kind: "mine" | "off" | "milestone" | "appt"; id?: string };
 export function comingUp(state: State, t: Date): Entry[] {
   const due = parse(state.due), leave = parse(state.leave);
   const long: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
@@ -268,9 +294,13 @@ export function comingUp(state: State, t: Date): Entry[] {
       const range = fmt(s, long) + (o.end && o.end !== o.start ? " – " + fmt(parse(o.end)) : "");
       return { key: "o" + o.id, date: diff(t, s) < 0 ? t : s, title: o.label, sub: range + " · " + n + " " + plural(n, "workday") + " off", kind: "off" };
     });
+  const appts: Entry[] = upcomingAppts(state, t).map((a) => ({
+    key: "a" + a.id, date: parse(a.date), title: a.title, kind: "appt", id: a.id,
+    sub: [fmt(parse(a.date), long), timeLabel(a.time), a.place].filter(Boolean).join(" · "),
+  }));
   const ms: Entry[] = milestones(due, leave, t).map((m, i) => ({ key: "m" + i, date: m.date, title: m.title, sub: fmt(m.date, long) + " · " + m.sub, kind: "milestone" }));
-  const rank = { mine: 0, off: 1, milestone: 2 };
-  return [...mine, ...offs, ...ms].sort((a, b) => a.date.getTime() - b.date.getTime() || rank[a.kind] - rank[b.kind]);
+  const rank = { appt: 0, mine: 1, off: 2, milestone: 3 };
+  return [...appts, ...mine, ...offs, ...ms].sort((a, b) => a.date.getTime() - b.date.getTime() || rank[a.kind] - rank[b.kind]);
 }
 
 // ---------- the summary both widgets and notifications use ----------

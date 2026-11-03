@@ -36,6 +36,7 @@ export default function Settings({ visible, onClose }: { visible: boolean; onClo
     update((s) => ({
       ...s,
       items: s.sample ? s.items.filter((i) => !i.id.startsWith("ex")) : s.items,
+      appts: s.sample ? s.appts.filter((a) => !a.id.startsWith("ex")) : s.appts,
       sample: false,
       name: name.trim(),
       due,

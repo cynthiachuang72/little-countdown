@@ -1,8 +1,9 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { addDays, diff, iso, joyFor, parse, plural, State, today } from "./lib/core";
+import { addDays, apptAt, diff, iso, joyFor, parse, plural, State, timeLabel, today, upcomingAppts } from "./lib/core";
 
 const PREFIX = "joy-";
+const APPT_PREFIX = "appt-";
 const CHANNEL = "daily-joy";
 
 Notifications.setNotificationHandler({
@@ -36,13 +37,18 @@ export async function scheduleReminders(state: State): Promise<void> {
   try {
     const queued = await Notifications.getAllScheduledNotificationsAsync();
     await Promise.all(
-      queued.filter((n) => n.identifier.startsWith(PREFIX)).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+      queued
+        .filter((n) => n.identifier.startsWith(PREFIX) || n.identifier.startsWith(APPT_PREFIX))
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
     );
-    if (!state.reminder.on || state.sample) return;
+    if (state.sample) return;
     const perm = await Notifications.getPermissionsAsync();
     if (!perm.granted) return;
 
     const now = new Date();
+    if (state.apptRemind) await scheduleAppointments(state, now);
+    if (!state.reminder.on) return;
+
     const t = today(now);
     const due = parse(state.due), leave = parse(state.leave);
     for (let i = 0; i < 14; i++) {
@@ -61,5 +67,31 @@ export async function scheduleReminders(state: State): Promise<void> {
     }
   } catch {
     // Reminders are a nice-to-have; never let them break the app.
+  }
+}
+
+/** The evening before (7 pm) and, for timed ones, an hour before each upcoming appointment. */
+async function scheduleAppointments(state: State, now: Date) {
+  const soon = upcomingAppts(state, today(now)).slice(0, 20);
+  for (const a of soon) {
+    const at = apptAt(a);
+    const day = parse(a.date);
+    const where = a.place ? ` · ${a.place}` : "";
+    const eve = new Date(day.getFullYear(), day.getMonth(), day.getDate() - 1, 19, 0);
+    if (eve > now) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: APPT_PREFIX + a.id + "-eve",
+        content: { title: `Tomorrow: ${a.title}`, body: (a.time ? timeLabel(a.time) : "Time not set") + where },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: eve, channelId: CHANNEL },
+      });
+    }
+    const hour = new Date(at.getTime() - 60 * 60 * 1000);
+    if (a.time && hour > now) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: APPT_PREFIX + a.id + "-hr",
+        content: { title: `${a.title} in an hour`, body: `${timeLabel(a.time)}${where}` },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: hour, channelId: CHANNEL },
+      });
+    }
   }
 }
