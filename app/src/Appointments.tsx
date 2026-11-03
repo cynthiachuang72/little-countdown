@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Switch, TextInput, View } from "react-native";
 import { Card, DateField, Pill, styles as ui, T, TimeField } from "./components";
-import { APPT_PRESETS, diff, fmt, parse, State, timeLabel, upcomingAppts } from "./lib/core";
+import { APPT_PRESETS, BABY_APPT_PRESETS, diff, fmt, parse, State, timeLabel, upcomingAppts } from "./lib/core";
 import { askPermission } from "./notifications";
 import { newId, useStore } from "./store";
 import { fonts, usePalette } from "./theme";
@@ -66,9 +66,9 @@ export function AddAppointment() {
       <T v="label">Add an appointment</T>
       <View style={{ gap: 4 }}>
         <T v="small">What is it?</T>
-        <TextInput value={title} onChangeText={setTitle} placeholder="OB check-up, ultrasound…" placeholderTextColor={c.muted} maxLength={60} style={inputStyle} />
+        <TextInput value={title} onChangeText={setTitle} placeholder={state.born ? "Pediatrician, vaccines…" : "OB check-up, ultrasound…"} placeholderTextColor={c.muted} maxLength={60} style={inputStyle} />
         <View style={[ui.row, { marginTop: 4 }]}>
-          {APPT_PRESETS.map((p) => (
+          {(state.born ? BABY_APPT_PRESETS : APPT_PRESETS).map((p) => (
             <Pressable key={p} onPress={() => setTitle(p)} accessibilityRole="button" accessibilityLabel={"Use " + p}
               style={({ pressed }) => [s.preset, { borderColor: title === p ? c.rose : c.line, backgroundColor: title === p ? c.roseSoft : c.surface, opacity: pressed ? 0.7 : 1 }]}>
               <T v="small" color={title === p ? "rose" : "ink"} style={{ fontSize: 13 }}>{p}</T>

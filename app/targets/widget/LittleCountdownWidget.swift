@@ -13,6 +13,14 @@ struct Snapshot: Codable {
   var off: [String]
   var joys: [String: String]
   var theme: String?
+  var born: String?
+  var babyName: String?
+  var milestones: [MilestoneDate]?
+}
+
+struct MilestoneDate: Codable {
+  var date: String
+  var title: String
 }
 
 struct Numbers {
@@ -23,6 +31,16 @@ struct Numbers {
   var joy: String
   var isExample: Bool
   var cute: Bool = false
+
+  // What the widget shows. Before birth: days to baby and to leave. After: baby's age and the next milestone.
+  var leftNum: Int = 0
+  var leftShort = "baby"
+  var leftLabel = "days to baby"
+  var rightNum: Int = 0
+  var rightShort = "leave"
+  var rightLabel = ""
+  var tag = ""
+  var inline = ""
 }
 
 private let dayFormatter: DateFormatter = {
@@ -63,8 +81,39 @@ func numbers(on date: Date) -> Numbers {
   let week = min(42, max(0, days(start, today)) / 7)
   let joy = snap?.joys[dayFormatter.string(from: today)] ?? "Take a slow breath. You're doing great."
 
-  return Numbers(babyDays: max(0, days(today, due)), leaveDays: max(0, days(today, leave)),
-                 workdays: workdays, week: week, joy: joy, isExample: snap == nil, cute: snap?.theme == "cute")
+  var n = Numbers(babyDays: max(0, days(today, due)), leaveDays: max(0, days(today, leave)),
+                  workdays: workdays, week: week, joy: joy, isExample: snap == nil, cute: snap?.theme == "cute")
+  n.leftNum = n.babyDays
+  n.leftLabel = n.babyDays == 1 ? "day to baby" : "days to baby"
+  n.rightNum = n.leaveDays
+  n.rightLabel = "\(workdays) workdays to leave"
+  n.tag = "Week \(week)"
+  n.inline = "\(n.babyDays) days to baby · \(n.leaveDays) to leave"
+
+  if let bornText = snap?.born, let born = dayFormatter.date(from: bornText) {
+    // Same rules as babyAge() in the app: days, then weeks, then months, then years.
+    let ageDays = max(0, days(born, today))
+    let months = max(0, cal.dateComponents([.month], from: born, to: today).month ?? 0)
+    var num = ageDays, unit = ageDays == 1 ? "day old" : "days old", short = "days"
+    if ageDays >= 14 && months < 2 { num = ageDays / 7; unit = "weeks old"; short = "wks" }
+    else if months >= 12 { num = months / 12; unit = num == 1 ? "year old" : "years old"; short = "yrs" }
+    else if months >= 2 { num = months; unit = "months old"; short = "mo" }
+    let next = (snap?.milestones ?? []).first { m in
+      guard let d = dayFormatter.date(from: m.date) else { return false }
+      return d >= today
+    }
+    let nextDays = next.flatMap { dayFormatter.date(from: $0.date) }.map { days(today, $0) } ?? 0
+    let who = (snap?.babyName ?? "").isEmpty ? "Baby" : snap!.babyName!
+    n.leftNum = num
+    n.leftShort = short
+    n.leftLabel = unit
+    n.rightNum = nextDays
+    n.rightShort = "to go"
+    n.rightLabel = next == nil ? "Growing every day" : nextDays == 0 ? "\(next!.title) today!" : "days to \(next!.title)"
+    n.tag = who
+    n.inline = next == nil ? "\(who) is \(num) \(unit)" : "\(who) is \(num) \(short) · \(nextDays)d to \(next!.title)"
+  }
+  return n
 }
 
 // MARK: - Timeline
@@ -76,7 +125,9 @@ struct Entry: TimelineEntry {
 
 struct Provider: TimelineProvider {
   func placeholder(in context: Context) -> Entry {
-    Entry(date: .now, n: Numbers(babyDays: 132, leaveDays: 116, workdays: 76, week: 21, joy: "Plan one more date night before baby arrives.", isExample: true))
+    Entry(date: .now, n: Numbers(babyDays: 132, leaveDays: 116, workdays: 76, week: 21, joy: "Plan one more date night before baby arrives.", isExample: true,
+                                 leftNum: 132, leftLabel: "days to baby", rightNum: 116, rightLabel: "76 workdays to leave", tag: "Week 21",
+                                 inline: "132 days to baby · 116 to leave"))
   }
   func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) {
     completion(context.isPreview ? placeholder(in: context) : Entry(date: .now, n: numbers(on: .now)))
@@ -158,23 +209,23 @@ struct WidgetView: View {
     let p = n.cute ? Pal.cute : Pal.calm
     switch family {
     case .accessoryInline:
-      Text("\(n.babyDays) days to baby · \(n.leaveDays) to leave")
+      Text(n.inline)
     case .accessoryCircular:
       ZStack {
         AccessoryWidgetBackground()
         VStack(spacing: 0) {
-          Text("\(n.babyDays)").font(.system(size: 20, weight: .bold, design: .rounded)).minimumScaleFactor(0.6)
-          Text("baby").font(.system(size: 10, weight: .semibold, design: .rounded))
+          Text("\(n.leftNum)").font(.system(size: 20, weight: .bold, design: .rounded)).minimumScaleFactor(0.6)
+          Text(n.leftShort).font(.system(size: 10, weight: .semibold, design: .rounded))
         }
       }
     case .accessoryRectangular:
       VStack(alignment: .leading, spacing: 2) {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-          Text("\(n.babyDays)").font(.system(size: 22, weight: .bold, design: .rounded))
-          Text("baby").font(.system(size: 12, weight: .semibold, design: .rounded))
+          Text("\(n.leftNum)").font(.system(size: 22, weight: .bold, design: .rounded))
+          Text(n.leftShort).font(.system(size: 12, weight: .semibold, design: .rounded))
           Spacer().frame(width: 8)
-          Text("\(n.leaveDays)").font(.system(size: 22, weight: .bold, design: .rounded))
-          Text("leave").font(.system(size: 12, weight: .semibold, design: .rounded))
+          Text("\(n.rightNum)").font(.system(size: 22, weight: .bold, design: .rounded))
+          Text(n.rightShort).font(.system(size: 12, weight: .semibold, design: .rounded))
         }
         Text(n.joy).font(.system(size: 11, design: .rounded)).lineLimit(2)
       }
@@ -183,25 +234,25 @@ struct WidgetView: View {
         HStack {
           Text(entry.date, format: .dateTime.weekday(.abbreviated).day())
           Spacer()
-          Text("Wk \(n.week)").foregroundStyle(p.rose)
+          Text(n.tag).foregroundStyle(p.rose)
         }
         .font(.system(size: 11, weight: .semibold, design: .rounded))
         .foregroundStyle(p.muted)
-        Tile(num: n.babyDays, label: "days to baby", soft: p.roseSoft, strong: p.rose, size: 30, p: p)
-        Tile(num: n.leaveDays, label: "\(n.workdays) workdays left", soft: p.sageSoft, strong: p.sage, size: 22, p: p)
+        Tile(num: n.leftNum, label: n.leftLabel, soft: p.roseSoft, strong: p.rose, size: 30, p: p)
+        Tile(num: n.rightNum, label: n.rightLabel, soft: p.sageSoft, strong: p.sage, size: 22, p: p)
       }
     default:
       VStack(alignment: .leading, spacing: 8) {
         HStack {
           Text(entry.date, format: .dateTime.weekday(.wide).month(.abbreviated).day())
           Spacer()
-          Text("Week \(n.week)").foregroundStyle(p.rose)
+          Text(n.tag).foregroundStyle(p.rose)
         }
         .font(.system(size: 12, weight: .semibold, design: .rounded))
         .foregroundStyle(p.muted)
         HStack(spacing: 8) {
-          Tile(num: n.babyDays, label: n.babyDays == 1 ? "day to baby" : "days to baby", soft: p.roseSoft, strong: p.rose, size: 36, p: p)
-          Tile(num: n.leaveDays, label: "\(n.workdays) workdays to leave", soft: p.sageSoft, strong: p.sage, size: 36, p: p)
+          Tile(num: n.leftNum, label: n.leftLabel, soft: p.roseSoft, strong: p.rose, size: 36, p: p)
+          Tile(num: n.rightNum, label: n.rightLabel, soft: p.sageSoft, strong: p.sage, size: 36, p: p)
         }
         Text(n.isExample ? "Open Little Countdown to add your dates." : "Today: \(n.joy)")
           .font(.system(size: 12, weight: .medium, design: .rounded))

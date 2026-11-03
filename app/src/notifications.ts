@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { addDays, apptAt, diff, iso, joyFor, parse, plural, State, timeLabel, today, upcomingAppts } from "./lib/core";
+import { addDays, apptAt, babyAge, diff, iso, joyFor, nextBabyMilestone, parse, plural, State, timeLabel, today, upcomingAppts } from "./lib/core";
 
 const PREFIX = "joy-";
 const APPT_PREFIX = "appt-";
@@ -56,9 +56,19 @@ export async function scheduleReminders(state: State): Promise<void> {
       const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), state.reminder.hour, state.reminder.minute);
       if (at <= now) continue;
       const bd = Math.max(0, diff(day, due)), ld = diff(day, leave);
-      const title =
+      const born = state.born ? parse(state.born) : null;
+      const next = born ? nextBabyMilestone(born, day) : null;
+      const babyTitle = born
+        ? (() => {
+            const a = babyAge(born, day), who = state.babyName || "Baby";
+            const nd = next ? diff(day, next.date) : -1;
+            if (nd === 0) return next!.title.includes("birthday") ? `It's ${who}'s ${next!.title.toLowerCase()}!` : `${who} is ${next!.title} today`;
+            return `${who} is ${a.num} ${a.unit}` + (next ? ` · ${nd} ${plural(nd, "day")} to ${next.title}` : "");
+          })()
+        : null;
+      const title = babyTitle ?? (
         bd === 0 ? "Due date today" : ld === 0 ? "Maternity leave starts today" :
-        ld > 0 ? `${bd} ${plural(bd, "day")} to baby · ${ld} to leave` : `${bd} ${plural(bd, "day")} to baby`;
+        ld > 0 ? `${bd} ${plural(bd, "day")} to baby · ${ld} to leave` : `${bd} ${plural(bd, "day")} to baby`);
       await Notifications.scheduleNotificationAsync({
         identifier: PREFIX + iso(day),
         content: { title, body: joyFor(state, iso(day)).text },

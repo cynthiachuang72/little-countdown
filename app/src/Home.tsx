@@ -4,9 +4,10 @@ import { Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextI
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, DateField, IconButton, Pill, Remove, styles as ui, T, Tag } from "./components";
 import {
-  comingUp, countWorkdays, diff, fmt, iso, joyFor, offSet, parse, plural, pregnancy, pruneJoys, streak, today, usHolidays, weekdaysIn,
+  addMonths, babyAge, comingUp, countWorkdays, monthsBetween, nextBabyMilestone, diff, fmt, iso, joyFor, offSet, parse, plural, pregnancy, pruneJoys, streak, today, usHolidays, weekdaysIn,
 } from "./lib/core";
 import { AddAppointment, NextAppointment } from "./Appointments";
+import BabyHere from "./BabyHere";
 import Settings from "./Settings";
 import { newId, useStore } from "./store";
 import { fonts, usePalette } from "./theme";
@@ -28,6 +29,11 @@ export default function Home() {
   const st = streak(state, t);
   const entries = comingUp(state, t);
   const undated = state.items.filter((i) => !i.date);
+  const born = state.born ? parse(state.born) : null;
+  const age = born ? babyAge(born, t) : null;
+  const next = born ? nextBabyMilestone(born, t) : null;
+  const yearPct = born ? Math.min(100, (diff(born, t) / diff(born, addMonths(born, 12))) * 100) : 0;
+  const [babyOpen, setBabyOpen] = useState(false);
 
   const hr = new Date().getHours();
   const greet = (hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening") + (state.name ? ", " + state.name : "");
@@ -120,6 +126,35 @@ export default function Home() {
             </View>
           ) : null}
 
+          {state.born ? (
+            <>
+          {/* After baby arrives: age and the next milestone */}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
+              {cute ? <Sprinkles color={c.rose} seed={1} /> : null}
+              <T v="label">{state.babyName ? `${state.babyName} is` : "Baby is"}</T>
+              <T v="display" color="rose">{age!.num}</T>
+              <T v="strong">{age!.unit}</T>
+              <T v="small">{age!.extra || `Born ${fmt(born!)}`}</T>
+            </Card>
+            <Card tone="sageSoft" style={[s.count, { overflow: "hidden" }]}>
+              {cute ? <Sprinkles color={c.sage} seed={2} /> : null}
+              <T v="label">Next milestone</T>
+              {next ? (
+                <>
+                  <T v="display" color="sage">{diff(t, next.date)}</T>
+                  <T v="strong">{diff(t, next.date) === 0 ? "it's today!" : `${plural(diff(t, next.date), "day")} to go`}</T>
+                  <T v="small">{next.title} · {fmt(next.date)}</T>
+                </>
+              ) : (
+                <T v="strong">So many milestones already</T>
+              )}
+            </Card>
+          </View>
+
+            </>
+          ) : (
+            <>
           {/* Countdowns */}
           <View style={{ flexDirection: "row", gap: 12 }}>
             <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
@@ -140,8 +175,51 @@ export default function Home() {
             </Card>
           </View>
 
+            </>
+          )}
+
+          {!state.born && bd <= 14 && !state.sample ? (
+            <Card tone="roseSoft" style={{ flexDirection: "row", alignItems: "center", gap: 12, overflow: "hidden" }}>
+              {cute ? <Sprinkles color={c.rose} seed={2} /> : null}
+              <View style={{ flex: 1 }}>
+                <T v="strong">Has your little one arrived?</T>
+                <T v="small">Switch to counting down baby's milestones.</T>
+              </View>
+              <Pill label="Baby is here!" primary onPress={() => setBabyOpen(true)} />
+            </Card>
+          ) : null}
+
           <NextAppointment t={t} />
 
+          {state.born ? (
+            <>
+          {/* First year */}
+          <Card>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <View style={[s.seedBox, { backgroundColor: cute ? c.roseSoft : c.bg }]}>
+                <Ionicons name="heart" size={22 + Math.min(1, yearPct / 100) * 14} color={c.rose} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T v="h2">{yearPct < 100 ? `Month ${Math.min(12, monthsBetween(born!, t) + 1)} of the first year` : "Past the first year"}</T>
+                <T v="small">{diff(born!, t)} {plural(diff(born!, t), "day")} together so far.</T>
+              </View>
+            </View>
+            {yearPct < 100 ? (
+              <View style={{ marginTop: 14, marginBottom: 2 }}>
+                <View style={[s.track, { backgroundColor: c.bg }]}>
+                  <View style={[s.fill, { width: `${yearPct}%`, backgroundColor: c.rose }]} />
+                  <View style={[s.pin, { left: `${yearPct}%`, backgroundColor: c.ink, borderColor: c.surface }]} />
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
+                  {["Birth", "3 mo", "6 mo", "9 mo", "1 year"].map((x) => <T key={x} v="small" style={{ fontSize: 12 }}>{x}</T>)}
+                </View>
+              </View>
+            ) : null}
+          </Card>
+
+            </>
+          ) : (
+            <>
           {/* Journey */}
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
@@ -168,6 +246,9 @@ export default function Home() {
               </View>
             </View>
           </Card>
+
+            </>
+          )}
 
           {/* Joy */}
           <Animated.View style={{ transform: [{ scale: pop }] }}>
@@ -256,6 +337,8 @@ export default function Home() {
             <T v="small">Dated plans join the countdown. Undated ones show up as a little joy now and then.</T>
           </Card>
 
+          {state.born ? null : (
+            <>
           {/* Days off */}
           <Section title="Days off before leave" right={wd.skipped ? `${wd.skipped} workdays saved` : ""}>
             {offSorted.length ? (
@@ -303,13 +386,17 @@ export default function Home() {
             </Card>
           </Section>
 
+            </>
+          )}
+
           <T v="small" style={{ textAlign: "center", fontSize: 12 }}>
             Little Countdown is for fun and planning. It isn't medical advice.
           </T>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Settings visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <Settings visible={settingsOpen} onClose={() => setSettingsOpen(false)} onBaby={() => { setSettingsOpen(false); setBabyOpen(true); }} />
+      <BabyHere visible={babyOpen} onClose={() => setBabyOpen(false)} />
     </View>
   );
 }

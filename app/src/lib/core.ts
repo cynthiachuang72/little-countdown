@@ -21,6 +21,9 @@ export type State = {
   reminder: { on: boolean; hour: number; minute: number };
   /** Reminders the evening before and an hour before each appointment. */
   apptRemind: boolean;
+  /** Birth date once baby has arrived; switches the app to counting baby's milestones. */
+  born: string | null;
+  babyName: string;
   theme: ThemeName;
 };
 
@@ -40,6 +43,8 @@ export const SAMPLE: State = {
   joys: {},
   reminder: { on: false, hour: 8, minute: 30 },
   apptRemind: true,
+  born: null,
+  babyName: "",
   theme: "calm",
 };
 
@@ -56,6 +61,8 @@ export function normalize(raw: unknown): State {
     joys: r.joys && typeof r.joys === "object" ? r.joys : {},
     reminder: { ...base.reminder, ...(r.reminder || {}) },
     theme: r.theme === "cute" ? "cute" : "calm",
+    born: typeof r.born === "string" ? r.born : null,
+    babyName: typeof r.babyName === "string" ? r.babyName : "",
     v: 1,
   };
 }
@@ -229,6 +236,38 @@ export const IDEAS = [
   "Have a cozy night in with your favorite takeout.",
   "Plan a small treat for your last day of work.",
 ];
+export const BABY_IDEAS = [
+  "Take this month's photo in the same spot, with the same blanket.",
+  "Write down one tiny thing baby did today.",
+  "Sniff the top of baby's head. Officially the best smell.",
+  "Take a slow walk together, even just around the block.",
+  "Save a voice memo of baby's little noises.",
+  "Eat something warm while someone else holds the baby.",
+  "Text a friend a photo, just because.",
+  "Take a nap when baby naps. The dishes can wait.",
+  "Read a book out loud, any book. Baby loves your voice.",
+  "Do a few minutes of tummy time on your chest.",
+  "Step outside for five minutes of fresh air.",
+  "Take a photo of baby's tiny hand in yours.",
+  "Put on a song you love and sway together.",
+  "Write a one-line letter to baby about today.",
+  "Ask someone to bring your favorite coffee or treat.",
+  "Take a shower and use the nice soap.",
+  "Count baby's toes. Then count them again.",
+  "Start a list of baby's firsts.",
+  "Call someone who loves hearing about baby.",
+  "Watch baby sleep for a minute. Then rest yourself.",
+  "Have a snack and a big glass of water. You're doing a lot.",
+  "Take a family selfie, messy hair and all.",
+  "Look back at a photo from week one and see how much has changed.",
+  "Lie down together for skin-to-skin cuddles.",
+  "Let one thing go today. You don't have to do it all.",
+  "Plan a short outing for later this week.",
+  "Make a playlist of the songs baby seems to like.",
+  "Write down how you feel today, in one sentence.",
+  "Notice one thing you're proud of yourself for.",
+];
+
 export function hash(s: string): number {
   let h = 2166136261;
   for (const c of s) {
@@ -243,7 +282,8 @@ export function joyFor(state: State, key: string): { text: string; mine: boolean
   const h = hash(key);
   // Every third suggestion comes from the person's own undated list, when there is one.
   if (mine.length && (h + shift) % 3 === 0) return { text: mine[(h + shift) % mine.length].title, mine: true };
-  return { text: IDEAS[(h + shift * 7) % IDEAS.length], mine: false };
+  const list = state.born ? BABY_IDEAS : IDEAS;
+  return { text: list[(h + shift * 7) % list.length], mine: false };
 }
 export function streak(state: State, t: Date): number {
   let n = 0, d = t;
@@ -259,6 +299,53 @@ export function pruneJoys(joys: Record<string, JoyRecord>, t: Date) {
   const out: Record<string, JoyRecord> = {};
   Object.keys(joys).forEach((k) => { if (k >= cut) out[k] = joys[k]; });
   return out;
+}
+
+// ---------- after baby arrives ----------
+/** Same day N months later, clamped to the month's last day (Jan 31 + 1 month = Feb 28). */
+export function addMonths(d: Date, n: number): Date {
+  const y = d.getFullYear(), m = d.getMonth() + n;
+  const last = new Date(y, m + 1, 0).getDate();
+  return new Date(y, m, Math.min(d.getDate(), last));
+}
+export function monthsBetween(born: Date, t: Date): number {
+  let m = (t.getFullYear() - born.getFullYear()) * 12 + (t.getMonth() - born.getMonth());
+  if (addMonths(born, m) > t) m--;
+  return Math.max(0, m);
+}
+const WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+export function babyMilestones(born: Date): Milestone[] {
+  const list: Milestone[] = [
+    { date: addDays(born, 7), title: "1 week old", sub: "One whole week together" },
+    { date: addDays(born, 14), title: "2 weeks old", sub: "Two weeks of getting to know each other" },
+    { date: addMonths(born, 1), title: "1 month old", sub: "A good day to start a monthly photo" },
+    { date: addDays(born, 42), title: "6 weeks old", sub: "First smiles often show up around now" },
+    { date: addDays(born, 100), title: "100 days old", sub: "A day many families celebrate" },
+  ];
+  for (let m = 2; m <= 11; m++) list.push({ date: addMonths(born, m), title: `${m} months old`, sub: `${WORDS[m][0].toUpperCase() + WORDS[m].slice(1)} months of you` });
+  list.push({ date: addMonths(born, 12), title: "First birthday", sub: "One whole year together" });
+  list.push({ date: addMonths(born, 18), title: "18 months old", sub: "A year and a half" });
+  for (let y = 2; y <= 5; y++) list.push({ date: addMonths(born, 12 * y), title: `${y === 2 ? "2nd" : y === 3 ? "3rd" : y + "th"} birthday`, sub: `${WORDS[y][0].toUpperCase() + WORDS[y].slice(1)} whole years` });
+  return list.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+export function nextBabyMilestone(born: Date, t: Date): Milestone | null {
+  return babyMilestones(born).find((m) => diff(t, m.date) >= 0) || null;
+}
+/** Baby's age, in the unit that reads naturally: days, then weeks, then months. */
+export function babyAge(born: Date, t: Date): { num: number; unit: string; extra: string } {
+  const days = Math.max(0, diff(born, t));
+  if (days < 14) return { num: days, unit: days === 1 ? "day old" : "days old", extra: days === 0 ? "Born today" : "" };
+  const months = monthsBetween(born, t);
+  if (months < 2) {
+    const w = Math.floor(days / 7), d = days % 7;
+    return { num: w, unit: "weeks old", extra: d ? `and ${d} ${plural(d, "day")}` : "" };
+  }
+  if (months >= 12) {
+    const y = Math.floor(months / 12), mo = months % 12;
+    return { num: y, unit: y === 1 ? "year old" : "years old", extra: mo ? `and ${mo} ${plural(mo, "month")}` : "" };
+  }
+  const rest = diff(addMonths(born, months), t), w = Math.floor(rest / 7);
+  return { num: months, unit: "months old", extra: w ? `and ${w} ${plural(w, "week")}` : "" };
 }
 
 // ---------- appointments ----------
@@ -278,6 +365,7 @@ export function upcomingAppts(state: State, t: Date): Appointment[] {
   return state.appts.filter((a) => diff(t, parse(a.date)) >= 0).sort((a, b) => apptAt(a).getTime() - apptAt(b).getTime());
 }
 export const APPT_PRESETS = ["OB check-up", "Ultrasound", "Glucose test", "Blood work", "Hospital tour", "Birth class", "Pediatrician"];
+export const BABY_APPT_PRESETS = ["Pediatrician", "Well-baby visit", "Vaccines", "Postpartum check-up", "Lactation consultant", "Hearing check"];
 
 // ---------- the "Coming up" list ----------
 export type Entry = { key: string; date: Date; title: string; sub: string; kind: "mine" | "off" | "milestone" | "appt"; id?: string };
@@ -298,9 +386,10 @@ export function comingUp(state: State, t: Date): Entry[] {
     key: "a" + a.id, date: parse(a.date), title: a.title, kind: "appt", id: a.id,
     sub: [fmt(parse(a.date), long), timeLabel(a.time), a.place].filter(Boolean).join(" · "),
   }));
-  const ms: Entry[] = milestones(due, leave, t).map((m, i) => ({ key: "m" + i, date: m.date, title: m.title, sub: fmt(m.date, long) + " · " + m.sub, kind: "milestone" }));
+  const msList = state.born ? babyMilestones(parse(state.born)).filter((m) => diff(t, m.date) >= 0) : milestones(due, leave, t);
+  const ms: Entry[] = msList.map((m, i) => ({ key: "m" + i, date: m.date, title: m.title, sub: fmt(m.date, long) + " · " + m.sub, kind: "milestone" }));
   const rank = { appt: 0, mine: 1, off: 2, milestone: 3 };
-  return [...appts, ...mine, ...offs, ...ms].sort((a, b) => a.date.getTime() - b.date.getTime() || rank[a.kind] - rank[b.kind]);
+  return [...appts, ...mine, ...(state.born ? [] : offs), ...ms].sort((a, b) => a.date.getTime() - b.date.getTime() || rank[a.kind] - rank[b.kind]);
 }
 
 // ---------- the summary both widgets and notifications use ----------
@@ -311,6 +400,10 @@ export type Snapshot = {
   off: string[]; // every weekday off from today until leave
   joys: Record<string, string>; // today's little joy for the next 21 days
   theme: ThemeName;
+  born: string | null;
+  babyName: string;
+  /** Upcoming baby milestones, so widgets can count down to the next one. */
+  milestones: { date: string; title: string }[];
   updated: string;
 };
 export function snapshot(state: State, t: Date = today()): Snapshot {
@@ -318,13 +411,28 @@ export function snapshot(state: State, t: Date = today()): Snapshot {
   const off = [...offSet(state.daysOff)].filter((k) => { const d = parse(k); return d >= t && d < leave && !isWeekend(d); }).sort();
   const joys: Record<string, string> = {};
   for (let i = 0; i < 21; i++) { const k = iso(addDays(t, i)); joys[k] = joyFor(state, k).text; }
-  return { due: state.due, leave: state.leave, name: state.name, off, joys, theme: state.theme, updated: new Date().toISOString() };
+  const milestones = state.born
+    ? babyMilestones(parse(state.born)).filter((m) => diff(t, m.date) >= 0).map((m) => ({ date: iso(m.date), title: m.title }))
+    : [];
+  return {
+    due: state.due, leave: state.leave, name: state.name, off, joys, theme: state.theme,
+    born: state.born, babyName: state.babyName, milestones, updated: new Date().toISOString(),
+  };
 }
 /** Numbers shown on a widget for a given day, computed from a snapshot so widgets stay right without the app open. */
 export function widgetNumbers(s: Snapshot, t: Date = today()) {
   const due = parse(s.due), leave = parse(s.leave);
   const wd = countWorkdays(t, leave, new Set(s.off));
+  const born = s.born ? parse(s.born) : null;
+  const age = born ? babyAge(born, t) : null;
+  const next = born ? s.milestones.find((m) => diff(t, parse(m.date)) >= 0) || null : null;
   return {
+    born: !!born,
+    ageNum: age?.num ?? 0,
+    ageUnit: age?.unit ?? "",
+    nextTitle: next?.title ?? "First birthday",
+    nextDays: next ? diff(t, parse(next.date)) : 0,
+    babyName: s.babyName,
     babyDays: Math.max(0, diff(t, due)),
     leaveDays: Math.max(0, diff(t, leave)),
     workdays: wd.n,

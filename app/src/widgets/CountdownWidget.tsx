@@ -11,6 +11,12 @@ type Props = {
   joy: string;
   sample?: boolean;
   cute?: boolean;
+  born?: boolean;
+  ageNum?: number;
+  ageUnit?: string;
+  nextTitle?: string;
+  nextDays?: number;
+  babyName?: string;
 };
 
 const CALM = {
@@ -52,7 +58,7 @@ function Tile({ num, label, soft, strong, muted, font }: { num: number; label: s
 }
 
 /** Android home screen widget. Tapping it opens the app. */
-export function CountdownWidget({ babyDays, leaveDays, workdays, week, joy, sample, cute }: Props) {
+export function CountdownWidget({ babyDays, leaveDays, workdays, week, joy, sample, cute, born, ageNum = 0, ageUnit = "", nextTitle = "", nextDays = 0, babyName = "" }: Props) {
   const C = cute ? CUTE : CALM;
   const font = cute ? "sans-serif-medium" : "serif";
   const hex = (x: string) => x as `#${string}`;
@@ -71,11 +77,13 @@ export function CountdownWidget({ babyDays, leaveDays, workdays, week, joy, samp
     >
       <FlexWidget style={{ width: "match_parent", flexDirection: "row", justifyContent: "space-between" }}>
         <TextWidget text="Little Countdown" style={{ fontSize: 12, color: hex(C.muted), fontWeight: "700" }} />
-        <TextWidget text={`Week ${week}`} style={{ fontSize: 12, color: hex(C.rose), fontWeight: "700" }} />
+        <TextWidget text={born ? babyName || "Baby" : `Week ${week}`} style={{ fontSize: 12, color: hex(C.rose), fontWeight: "700" }} />
       </FlexWidget>
       <FlexWidget style={{ width: "match_parent", flex: 1, flexDirection: "row", flexGap: 8, marginTop: 8, marginBottom: 8 }}>
-        <Tile num={babyDays} label={babyDays === 1 ? "day to baby" : "days to baby"} soft={C.roseSoft} strong={C.rose} muted={C.muted} font={font} />
-        <Tile num={leaveDays} label={`${workdays} workdays to leave`} soft={C.sageSoft} strong={C.sage} muted={C.muted} font={font} />
+        <Tile num={born ? ageNum : babyDays} label={born ? ageUnit : babyDays === 1 ? "day to baby" : "days to baby"}
+          soft={C.roseSoft} strong={C.rose} muted={C.muted} font={font} />
+        <Tile num={born ? nextDays : leaveDays} label={born ? (nextDays === 0 ? `${nextTitle} today!` : `days to ${nextTitle}`) : `${workdays} workdays to leave`}
+          soft={C.sageSoft} strong={C.sage} muted={C.muted} font={font} />
       </FlexWidget>
       <TextWidget
         text={sample ? "Example dates. Open the app to add yours." : `Today: ${joy}`}

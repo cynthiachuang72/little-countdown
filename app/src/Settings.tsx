@@ -7,7 +7,7 @@ import { useStore } from "./store";
 import { fonts, THEMES, usePalette } from "./theme";
 
 /** Bottom sheet for due date, leave date, name and the daily reminder. */
-export default function Settings({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export default function Settings({ visible, onClose, onBaby }: { visible: boolean; onClose: () => void; onBaby: () => void }) {
   const { c } = usePalette();
   const insets = useSafeAreaInsets();
   const { state, update } = useStore();
@@ -73,6 +73,15 @@ export default function Settings({ visible, onClose }: { visible: boolean; onClo
                   </Pressable>
                 );
               })}
+            </View>
+
+            <View style={[s.divider, { backgroundColor: c.line }]} />
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <T v="strong">{state.born ? "Baby is here" : "Has baby arrived?"}</T>
+                <T v="small">{state.born ? "Change baby's birthday or name, or go back to the pregnancy countdown." : "Switch to counting down baby's milestones."}</T>
+              </View>
+              <Pill label={state.born ? "Edit" : "Baby is here!"} primary={!state.born} onPress={onBaby} />
             </View>
 
             <View style={[s.divider, { backgroundColor: c.line }]} />
