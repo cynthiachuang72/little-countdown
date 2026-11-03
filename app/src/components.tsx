@@ -9,7 +9,8 @@ type Variant = "display" | "title" | "h2" | "body" | "strong" | "small" | "label
 export function T({ v = "body", color, style, ...rest }: TextProps & { v?: Variant; color?: keyof Palette }) {
   const { c } = usePalette();
   const base: Record<Variant, TextStyle> = {
-    display: { fontFamily: fonts.display, fontSize: 56, lineHeight: 60, fontVariant: ["tabular-nums"] },
+    // Lining numbers keep every digit the same height; the extra line height leaves room for the serif's tall glyphs.
+    display: { fontFamily: fonts.display, fontSize: 54, lineHeight: 72, paddingTop: 4, fontVariant: ["lining-nums", "tabular-nums"] },
     title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32 },
     h2: { fontFamily: fonts.display, fontSize: 21, lineHeight: 27 },
     body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },

@@ -188,7 +188,7 @@ export default function Home() {
                 return (
                   <View key={e.key} style={[s.li, { borderTopColor: c.line, borderTopWidth: i ? StyleSheet.hairlineWidth : 0 }, n === 0 && { backgroundColor: c.sageSoft }]}>
                     <View style={s.days}>
-                      <T style={{ fontFamily: fonts.display, fontSize: 22, lineHeight: 26 }}>{n === 0 ? "✓" : n}</T>
+                      <T style={{ fontFamily: fonts.display, fontSize: 22, lineHeight: 30, fontVariant: ["lining-nums", "tabular-nums"] }}>{n === 0 ? "✓" : n}</T>
                       <T v="small" style={{ fontSize: 11 }}>{n === 0 ? "today" : plural(n, "day")}</T>
                     </View>
                     <View style={{ flex: 1 }}>
@@ -249,7 +249,7 @@ export default function Home() {
                   return (
                     <View key={o.id} style={[s.li, { borderTopColor: c.line, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: past ? 0.5 : 1 }]}>
                       <View style={s.days}>
-                        <T style={{ fontFamily: fonts.display, fontSize: 22, lineHeight: 26 }}>{n}</T>
+                        <T style={{ fontFamily: fonts.display, fontSize: 22, lineHeight: 30, fontVariant: ["lining-nums", "tabular-nums"] }}>{n}</T>
                         <T v="small" style={{ fontSize: 11 }}>{plural(n, "day")}</T>
                       </View>
                       <View style={{ flex: 1 }}>
