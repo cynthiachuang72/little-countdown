@@ -1,6 +1,6 @@
 import React from "react";
 import type { WidgetTaskHandlerProps } from "react-native-android-widget";
-import { snapshot, widgetNumbers } from "../lib/core";
+import { activeLook, snapshot, widgetNumbers } from "../lib/core";
 import { loadState } from "../persist";
 import { CountdownWidget, WIDGET_NAME } from "./CountdownWidget";
 
@@ -13,7 +13,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     case "WIDGET_RESIZED": {
       const state = await loadState();
       const nums = widgetNumbers(snapshot(state));
-      props.renderWidget(<CountdownWidget {...nums} sample={state.sample} cute={state.theme === "cute"} />);
+      props.renderWidget(<CountdownWidget {...nums} sample={state.sample} look={activeLook(state)} />);
       break;
     }
     default:

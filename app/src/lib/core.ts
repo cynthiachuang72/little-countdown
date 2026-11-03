@@ -6,7 +6,8 @@ export type DayOff = { id: string; label: string; start: string; end: string | n
 /** A doctor's appointment, scan or class. `time` is "HH:MM" (24-hour) or null. */
 export type Appointment = { id: string; title: string; date: string; time: string | null; place: string };
 export type JoyRecord = { s?: number; d?: boolean };
-export type ThemeName = "calm" | "cute";
+import { BABY_LOOKS, type LookName, PREGNANCY_LOOKS, STORY } from "./looks";
+export type ThemeName = LookName;
 
 export type State = {
   v: 1;
@@ -24,7 +25,10 @@ export type State = {
   /** Birth date once baby has arrived; switches the app to counting baby's milestones. */
   born: string | null;
   babyName: string;
+  /** Look during pregnancy. */
   theme: ThemeName;
+  /** Look after birth; chosen from the story when "Baby is here!" is tapped, changeable in settings. */
+  babyTheme: ThemeName | null;
 };
 
 export const SAMPLE: State = {
@@ -46,6 +50,7 @@ export const SAMPLE: State = {
   born: null,
   babyName: "",
   theme: "calm",
+  babyTheme: null,
 };
 
 export function normalize(raw: unknown): State {
@@ -60,11 +65,18 @@ export function normalize(raw: unknown): State {
     appts: Array.isArray(r.appts) ? r.appts : raw && (raw as State).sample === false ? [] : base.appts,
     joys: r.joys && typeof r.joys === "object" ? r.joys : {},
     reminder: { ...base.reminder, ...(r.reminder || {}) },
-    theme: r.theme === "cute" ? "cute" : "calm",
+    theme: PREGNANCY_LOOKS.includes(r.theme as LookName) ? (r.theme as LookName) : "calm",
+    babyTheme: BABY_LOOKS.includes(r.babyTheme as LookName) ? (r.babyTheme as LookName) : null,
     born: typeof r.born === "string" ? r.born : null,
     babyName: typeof r.babyName === "string" ? r.babyName : "",
     v: 1,
   };
+}
+
+/** The look in use right now: the pregnancy look, or after birth the baby look (following the story by default). */
+export function activeLook(state: State): LookName {
+  if (!state.born) return state.theme;
+  return state.babyTheme || STORY[state.theme];
 }
 
 // ---------- dates (all local, date-only) ----------
@@ -415,7 +427,7 @@ export function snapshot(state: State, t: Date = today()): Snapshot {
     ? babyMilestones(parse(state.born)).filter((m) => diff(t, m.date) >= 0).map((m) => ({ date: iso(m.date), title: m.title }))
     : [];
   return {
-    due: state.due, leave: state.leave, name: state.name, off, joys, theme: state.theme,
+    due: state.due, leave: state.leave, name: state.name, off, joys, theme: activeLook(state),
     born: state.born, babyName: state.babyName, milestones, updated: new Date().toISOString(),
   };
 }

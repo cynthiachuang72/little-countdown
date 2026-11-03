@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useRef, useState } from "react";
-import { Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, DateField, IconButton, Pill, Remove, styles as ui, T, Tag } from "./components";
 import {
@@ -8,12 +8,16 @@ import {
 } from "./lib/core";
 import { AddAppointment, NextAppointment } from "./Appointments";
 import BabyHere from "./BabyHere";
+import Celebration from "./Celebration";
+import Hero from "./Hero";
+import LookSheet from "./LookSheet";
+import type { LookName } from "./lib/looks";
 import Settings from "./Settings";
 import { newId, useStore } from "./store";
 import { fonts, usePalette } from "./theme";
 
 export default function Home() {
-  const { c, f, r, cute } = usePalette();
+  const { c, f, r, look, illustrated } = usePalette();
   const insets = useSafeAreaInsets();
   const { state, update, tick } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -34,6 +38,9 @@ export default function Home() {
   const next = born ? nextBabyMilestone(born, t) : null;
   const yearPct = born ? Math.min(100, (diff(born, t) / diff(born, addMonths(born, 12))) * 100) : 0;
   const [babyOpen, setBabyOpen] = useState(false);
+  const [lookOpen, setLookOpen] = useState(false);
+  const [celebrateFrom, setCelebrateFrom] = useState<LookName | null>(null);
+  const months = born ? monthsBetween(born, t) : 0;
 
   const hr = new Date().getHours();
   const greet = (hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening") + (state.name ? ", " + state.name : "");
@@ -111,13 +118,22 @@ export default function Home() {
           {/* Header */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <T v="title">{greet}{cute ? " ♡" : ""}</T>
+              <T v="title">{greet}</T>
               <T v="small">{fmt(t, { weekday: "long", month: "long", day: "numeric" })}</T>
             </View>
-            <IconButton label="Your dates and reminders" onPress={() => setSettingsOpen(true)}>
-              <Ionicons name="calendar-outline" size={20} color={c.muted} />
-            </IconButton>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <IconButton label="Change the look" onPress={() => setLookOpen(true)}>
+                <Ionicons name="color-palette-outline" size={20} color={c.muted} />
+              </IconButton>
+              <IconButton label="Settings" onPress={() => setSettingsOpen(true)}>
+                <Ionicons name="settings-outline" size={20} color={c.muted} />
+              </IconButton>
+            </View>
           </View>
+
+          {illustrated ? (
+            <Hero look={look} week={preg.week} months={months} next={next ? { title: next.title, days: diff(t, next.date) } : null} babyName={state.babyName} bd={bd} />
+          ) : null}
 
           {state.sample ? (
             <View style={[s.sample, { borderColor: c.sky, backgroundColor: c.surface }]}>
@@ -129,16 +145,14 @@ export default function Home() {
           {state.born ? (
             <>
           {/* After baby arrives: age and the next milestone */}
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <Pressable onPress={() => setBabyOpen(true)} accessibilityRole="button" accessibilityLabel="Change baby's birthday or name" style={{ flexDirection: "row", gap: 12 }}>
             <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
-              {cute ? <Sprinkles color={c.rose} seed={1} /> : null}
               <T v="label">{state.babyName ? `${state.babyName} is` : "Baby is"}</T>
               <T v="display" color="rose">{age!.num}</T>
               <T v="strong">{age!.unit}</T>
               <T v="small">{age!.extra || `Born ${fmt(born!)}`}</T>
             </Card>
             <Card tone="sageSoft" style={[s.count, { overflow: "hidden" }]}>
-              {cute ? <Sprinkles color={c.sage} seed={2} /> : null}
               <T v="label">Next milestone</T>
               {next ? (
                 <>
@@ -150,22 +164,20 @@ export default function Home() {
                 <T v="strong">So many milestones already</T>
               )}
             </Card>
-          </View>
+          </Pressable>
 
             </>
           ) : (
             <>
           {/* Countdowns */}
-          <View style={{ flexDirection: "row", gap: 12 }}>
+          <Pressable onPress={() => setSettingsOpen(true)} accessibilityRole="button" accessibilityLabel="Change your dates" style={{ flexDirection: "row", gap: 12 }}>
             <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
-              {cute ? <Sprinkles color={c.rose} seed={1} /> : null}
               <T v="label">Baby arrives</T>
               <T v="display" color="rose">{bd}</T>
               <T v="strong">{bd === 0 ? "today could be the day" : plural(bd, "day")}</T>
               <T v="small">Due {fmt(due)} · {Math.floor(bd / 7)}w {bd % 7}d</T>
             </Card>
             <Card tone="sageSoft" style={[s.count, { overflow: "hidden" }]}>
-              {cute ? <Sprinkles color={c.sage} seed={2} /> : null}
               <T v="label">Leave starts</T>
               <T v="display" color="sage">{Math.max(0, ld)}</T>
               <T v="strong">{ld <= 0 ? "you're on leave" : plural(ld, "day")}</T>
@@ -173,14 +185,13 @@ export default function Home() {
                 {ld > 0 ? `${fmt(leave)} · ${wd.n} ${plural(wd.n, "workday")} left${wd.skipped ? ` after ${wd.skipped} off` : ""}` : "since " + fmt(leave)}
               </T>
             </Card>
-          </View>
+          </Pressable>
 
             </>
           )}
 
           {!state.born && bd <= 14 && !state.sample ? (
             <Card tone="roseSoft" style={{ flexDirection: "row", alignItems: "center", gap: 12, overflow: "hidden" }}>
-              {cute ? <Sprinkles color={c.rose} seed={2} /> : null}
               <View style={{ flex: 1 }}>
                 <T v="strong">Has your little one arrived?</T>
                 <T v="small">Switch to counting down baby's milestones.</T>
@@ -196,7 +207,7 @@ export default function Home() {
           {/* First year */}
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <View style={[s.seedBox, { backgroundColor: cute ? c.roseSoft : c.bg }]}>
+              <View style={[s.seedBox, { backgroundColor: illustrated ? c.roseSoft : c.bg }]}>
                 <Ionicons name="heart" size={22 + Math.min(1, yearPct / 100) * 14} color={c.rose} />
               </View>
               <View style={{ flex: 1 }}>
@@ -223,7 +234,7 @@ export default function Home() {
           {/* Journey */}
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <View style={[s.seedBox, { backgroundColor: cute ? c.roseSoft : c.bg }]}>
+              <View style={[s.seedBox, { backgroundColor: illustrated ? c.roseSoft : c.bg }]}>
                 <View style={{ width: preg.dot, height: preg.dot, borderRadius: preg.dot / 2, backgroundColor: c.rose, opacity: 0.85 }} />
               </View>
               <View style={{ flex: 1 }}>
@@ -254,8 +265,6 @@ export default function Home() {
           <Animated.View style={{ transform: [{ scale: pop }] }}>
             <Card style={{ overflow: "hidden" }}>
               <View pointerEvents="none" style={[s.blob, { backgroundColor: c.roseSoft }]} />
-              {cute ? <View pointerEvents="none" style={[s.blob2, { backgroundColor: c.sageSoft }]} /> : null}
-              {cute ? <Sprinkles color={c.sky} seed={3} /> : null}
               <T v="label">Today's little joy</T>
               <T v="h2" style={{ fontSize: 23, lineHeight: 30 }}>{joy.text}</T>
               <T v="small">{joy.mine ? "From your own list" : "A small thing to look forward to"}</T>
@@ -396,7 +405,9 @@ export default function Home() {
       </KeyboardAvoidingView>
 
       <Settings visible={settingsOpen} onClose={() => setSettingsOpen(false)} onBaby={() => { setSettingsOpen(false); setBabyOpen(true); }} />
-      <BabyHere visible={babyOpen} onClose={() => setBabyOpen(false)} />
+      <BabyHere visible={babyOpen} onClose={() => setBabyOpen(false)} onArrived={(from) => setCelebrateFrom(from)} />
+      <LookSheet visible={lookOpen} onClose={() => setLookOpen(false)} />
+      <Celebration from={celebrateFrom} onDone={() => setCelebrateFrom(null)} />
     </View>
   );
 }
@@ -417,23 +428,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <View style={{ gap: 4 }}><T v="small">{label}</T>{children}</View>;
 }
 
-// Little dots of confetti for the Cute look. Positions are fixed per card so they don't jump around.
-const DOTS: Record<number, { top?: number; bottom?: number; right?: number; left?: number; size: number; o: number }[]> = {
-  1: [{ top: 14, right: 16, size: 10, o: 0.55 }, { top: 34, right: 34, size: 6, o: 0.35 }, { bottom: 18, right: 22, size: 14, o: 0.2 }],
-  2: [{ top: 16, right: 18, size: 8, o: 0.45 }, { top: 40, right: 12, size: 12, o: 0.25 }, { bottom: 22, right: 30, size: 6, o: 0.4 }],
-  3: [{ top: 70, right: 26, size: 8, o: 0.5 }, { bottom: 24, right: 60, size: 6, o: 0.35 }, { top: 18, left: 150, size: 5, o: 0.4 }],
-};
-function Sprinkles({ color, seed }: { color: string; seed: number }) {
-  return (
-    <>
-      {DOTS[seed].map((d, i) => (
-        <View key={i} pointerEvents="none"
-          style={{ position: "absolute", top: d.top, bottom: d.bottom, left: d.left, right: d.right, width: d.size, height: d.size, borderRadius: d.size / 2, backgroundColor: color, opacity: d.o }} />
-      ))}
-    </>
-  );
-}
-
 function Legend({ color, text }: { color: string; text: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -451,7 +445,6 @@ const s = StyleSheet.create({
   fill: { position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 5, opacity: 0.8 },
   pin: { position: "absolute", top: -2, width: 14, height: 14, marginLeft: -7, borderRadius: 7, borderWidth: 3 },
   blob: { position: "absolute", right: -40, top: -40, width: 140, height: 140, borderRadius: 70, opacity: 0.7 },
-  blob2: { position: "absolute", left: -30, bottom: -50, width: 110, height: 110, borderRadius: 55, opacity: 0.6 },
   list: { borderRadius: 22, overflow: "hidden" },
   li: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   days: { width: 50, alignItems: "center" },

@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DateField, Pill, styles as ui, T, TimeField } from "./components";
 import { askPermission } from "./notifications";
 import { useStore } from "./store";
-import { fonts, THEMES, usePalette } from "./theme";
+import { LookPicker } from "./LookSheet";
+import { fonts, usePalette } from "./theme";
 
 /** Bottom sheet for due date, leave date, name and the daily reminder. */
 export default function Settings({ visible, onClose, onBaby }: { visible: boolean; onClose: () => void; onBaby: () => void }) {
@@ -53,27 +54,7 @@ export default function Settings({ visible, onClose, onBaby }: { visible: boolea
         <View style={[s.sheet, { backgroundColor: c.surface, paddingBottom: insets.bottom + 22 }]}>
           <ScrollView contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
             <T v="h2">Look</T>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              {THEMES.map((th) => {
-                const on = state.theme === th.name;
-                return (
-                  <Pressable
-                    key={th.name}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={th.label + " theme"}
-                    onPress={() => update((x) => ({ ...x, theme: th.name }))}
-                    style={[s.themeCard, { borderColor: on ? c.rose : c.line, backgroundColor: th.swatch[0] }]}
-                  >
-                    <View style={{ flexDirection: "row", gap: 6 }}>
-                      {th.swatch.slice(1).map((col) => <View key={col} style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: col }} />)}
-                    </View>
-                    <T v="strong" style={{ color: "#2A3147" }}>{th.label}{on ? " ✓" : ""}</T>
-                    <T v="small" style={{ color: "#6B7390" }}>{th.note}</T>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <LookPicker />
 
             <View style={[s.divider, { backgroundColor: c.line }]} />
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -126,5 +107,4 @@ const s = StyleSheet.create({
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 22, paddingHorizontal: 18, maxHeight: "90%" },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, minHeight: 44, fontFamily: fonts.body, fontSize: 16 },
   divider: { height: StyleSheet.hairlineWidth },
-  themeCard: { flex: 1, borderWidth: 2, borderRadius: 18, padding: 12, gap: 6 },
 });

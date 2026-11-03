@@ -30,7 +30,8 @@ struct Numbers {
   var week: Int
   var joy: String
   var isExample: Bool
-  var cute: Bool = false
+  var look = "calm"
+  var born = false
 
   // What the widget shows. Before birth: days to baby and to leave. After: baby's age and the next milestone.
   var leftNum: Int = 0
@@ -82,7 +83,7 @@ func numbers(on date: Date) -> Numbers {
   let joy = snap?.joys[dayFormatter.string(from: today)] ?? "Take a slow breath. You're doing great."
 
   var n = Numbers(babyDays: max(0, days(today, due)), leaveDays: max(0, days(today, leave)),
-                  workdays: workdays, week: week, joy: joy, isExample: snap == nil, cute: snap?.theme == "cute")
+                  workdays: workdays, week: week, joy: joy, isExample: snap == nil, look: snap?.theme ?? "calm", born: snap?.born != nil)
   n.leftNum = n.babyDays
   n.leftLabel = n.babyDays == 1 ? "day to baby" : "days to baby"
   n.rightNum = n.leaveDays
@@ -133,13 +134,17 @@ struct Provider: TimelineProvider {
     completion(context.isPreview ? placeholder(in: context) : Entry(date: .now, n: numbers(on: .now)))
   }
   func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
-    // One entry for now and one for each of the next few midnights, then ask again.
+    // Entries for now, each midnight (new countdown numbers) and 6 am / 7 pm (Sky's day and night), for 3 days.
     let cal = Calendar.current
     var entries = [Entry(date: .now, n: numbers(on: .now))]
-    var next = cal.startOfDay(for: .now)
-    for _ in 0..<3 {
-      next = cal.date(byAdding: .day, value: 1, to: next)!
-      entries.append(Entry(date: next, n: numbers(on: next)))
+    let start = cal.startOfDay(for: .now)
+    var next = start
+    for day in 0..<3 {
+      let base = cal.date(byAdding: .day, value: day, to: start)!
+      for hour in [6, 19, 24] {
+        let at = cal.date(byAdding: .hour, value: hour, to: base)!
+        if at > .now { entries.append(Entry(date: at, n: numbers(on: at))); next = at }
+      }
     }
     completion(Timeline(entries: entries, policy: .after(next)))
   }
@@ -153,18 +158,37 @@ extension Color {
   }
 }
 
-/// The two looks from the app (Calm and Cute), in light and dark.
+/// Colors for each look, matching src/lib/looks.ts in the app. Sky follows the time of day.
 struct Pal {
   let ink, muted, rose, roseSoft, sage, sageSoft, surface: Color
   let radius: CGFloat
   let numberDesign: Font.Design
 
-  static let calm = Pal(ink: .dyn(0x2A3147, 0xE9ECF4), muted: .dyn(0x6B7390, 0x9AA2BC), rose: .dyn(0xC9738B, 0xE7A3B6),
-                        roseSoft: .dyn(0xF6E3E9, 0x3A2C37), sage: .dyn(0x5F9274, 0x9CC4AB), sageSoft: .dyn(0xE1EEE6, 0x26352F),
-                        surface: .dyn(0xFBFCFE, 0x202535), radius: 16, numberDesign: .serif)
-  static let cute = Pal(ink: .dyn(0x5A3B52, 0xFCEAF1), muted: .dyn(0xA27F96, 0xCDAEC3), rose: .dyn(0xF2709A, 0xFF9DBC),
-                        roseSoft: .dyn(0xFFDDE8, 0x4C2E40), sage: .dyn(0x2FA582, 0x7EDBBD), sageSoft: .dyn(0xD6F5EA, 0x21403A),
-                        surface: .dyn(0xFFFFFF, 0x362839), radius: 20, numberDesign: .rounded)
+  // light then dark: surface, ink, muted, rose, roseSoft, sage, sageSoft
+  private static let table: [String: ([UInt32], [UInt32])] = [
+    "calm": ([0xFBFCFE, 0x2A3147, 0x6B7390, 0xC9738B, 0xF6E3E9, 0x5F9274, 0xE1EEE6], [0x202535, 0xE9ECF4, 0x9AA2BC, 0xE7A3B6, 0x3A2C37, 0x9CC4AB, 0x26352F]),
+    "calmBaby": ([0xFCFBFE, 0x33304A, 0x77728F, 0xD98270, 0xF7E4DF, 0x5E86B8, 0xE2EAF4], [0x232238, 0xECEAF4, 0xA29EBB, 0xF0A595, 0x3D2B2C, 0xA3BEDF, 0x253244]),
+    "bloom": ([0xFFFFFF, 0x2F4A2C, 0x6B8466, 0xD4637F, 0xFBE3E8, 0x4F8A4A, 0xDDEDD3], [0x22301F, 0xE8F1E2, 0xA7BDA0, 0xF08FA6, 0x45262F, 0x92C98A, 0x24391F]),
+    "nest": ([0xFFFBF5, 0x5A3F2C, 0x8F7360, 0xC46A4B, 0xF8DFD2, 0x55794A, 0xDCE8D2], [0x2E241C, 0xF4E9DE, 0xC2AA96, 0xEB967A, 0x4A2D22, 0x9EC28F, 0x26341F]),
+    "sky": ([0xFFFFFF, 0x1E3A5C, 0x5B7593, 0xE8784A, 0xFFE3D3, 0x2F86C2, 0xD9EEFB], [0x2A2F66, 0xF3EEFF, 0xB9B6E8, 0xFFE7A3, 0x3A3A6E, 0xC7B8FF, 0x34386F]),
+    "storybook": ([0xFFFFFF, 0x30507A, 0x6A84A6, 0xE8708F, 0xFDE3EA, 0x3F9C74, 0xDDF3E8], [0x213049, 0xE6EFFA, 0x9FB3CE, 0xF59AB2, 0x45293A, 0x86D1AE, 0x1F3B33]),
+    "friend": ([0xFFFFFF, 0x6A3B2A, 0x9B6E5C, 0xD9603F, 0xFFD3C2, 0x3E7A3A, 0xD3EBCD], [0x382720, 0xF8E6DC, 0xC9A595, 0xF58E70, 0x4D2A20, 0x93C98D, 0x24381F]),
+  ]
+
+  static func forLook(_ look: String, born: Bool, at date: Date) -> Pal {
+    let key = look == "calm" && born ? "calmBaby" : (table[look] == nil ? "calm" : look)
+    let (l, d) = table[key]!
+    func col(_ i: Int) -> Color {
+      if key == "sky" {
+        let h = Calendar.current.component(.hour, from: date)
+        return Color(UIColor(hex: (h < 6 || h >= 19) ? d[i] : l[i]))
+      }
+      return .dyn(l[i], d[i])
+    }
+    let design: Font.Design = key == "calm" || key == "calmBaby" || key == "bloom" ? .serif : .rounded
+    return Pal(ink: col(1), muted: col(2), rose: col(3), roseSoft: col(4), sage: col(5), sageSoft: col(6), surface: col(0),
+               radius: key.hasPrefix("calm") ? 16 : 20, numberDesign: design)
+  }
 }
 
 extension UIColor {
@@ -206,7 +230,7 @@ struct WidgetView: View {
 
   var body: some View {
     let n = entry.n
-    let p = n.cute ? Pal.cute : Pal.calm
+    let p = Pal.forLook(n.look, born: n.born, at: entry.date)
     switch family {
     case .accessoryInline:
       Text(n.inline)
@@ -268,7 +292,7 @@ struct LittleCountdownWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: kind, provider: Provider()) { entry in
       WidgetView(entry: entry)
-        .containerBackground(entry.n.cute ? Pal.cute.surface : Pal.calm.surface, for: .widget)
+        .containerBackground(Pal.forLook(entry.n.look, born: entry.n.born, at: entry.date).surface, for: .widget)
     }
     .configurationDisplayName("Little Countdown")
     .description("Days to baby and to maternity leave, with today's little joy.")

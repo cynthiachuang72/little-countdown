@@ -1,5 +1,6 @@
 import React from "react";
 import { FlexWidget, TextWidget } from "react-native-android-widget";
+import { type LookName, paletteFor } from "../lib/looks";
 
 export const WIDGET_NAME = "LittleCountdown";
 
@@ -10,32 +11,14 @@ type Props = {
   week: number;
   joy: string;
   sample?: boolean;
-  cute?: boolean;
+  look?: LookName;
+  dark?: boolean;
   born?: boolean;
   ageNum?: number;
   ageUnit?: string;
   nextTitle?: string;
   nextDays?: number;
   babyName?: string;
-};
-
-const CALM = {
-  bg: "#FBFCFE",
-  ink: "#2A3147",
-  muted: "#6B7390",
-  rose: "#C9738B",
-  roseSoft: "#F6E3E9",
-  sage: "#5F9274",
-  sageSoft: "#E1EEE6",
-};
-const CUTE: typeof CALM = {
-  bg: "#FFFFFF",
-  ink: "#5A3B52",
-  muted: "#A27F96",
-  rose: "#F2709A",
-  roseSoft: "#FFDDE8",
-  sage: "#2FA582",
-  sageSoft: "#D6F5EA",
 };
 
 function Tile({ num, label, soft, strong, muted, font }: { num: number; label: string; soft: string; strong: string; muted: string; font: string }) {
@@ -58,9 +41,9 @@ function Tile({ num, label, soft, strong, muted, font }: { num: number; label: s
 }
 
 /** Android home screen widget. Tapping it opens the app. */
-export function CountdownWidget({ babyDays, leaveDays, workdays, week, joy, sample, cute, born, ageNum = 0, ageUnit = "", nextTitle = "", nextDays = 0, babyName = "" }: Props) {
-  const C = cute ? CUTE : CALM;
-  const font = cute ? "sans-serif-medium" : "serif";
+export function CountdownWidget({ babyDays, leaveDays, workdays, week, joy, sample, look = "calm", dark = false, born, ageNum = 0, ageUnit = "", nextTitle = "", nextDays = 0, babyName = "" }: Props) {
+  const C = paletteFor(look, !!born, dark).c;
+  const font = look === "calm" || look === "bloom" ? "serif" : "sans-serif-medium";
   const hex = (x: string) => x as `#${string}`;
   return (
     <FlexWidget
@@ -68,8 +51,8 @@ export function CountdownWidget({ babyDays, leaveDays, workdays, week, joy, samp
       style={{
         height: "match_parent",
         width: "match_parent",
-        backgroundColor: hex(C.bg),
-        borderRadius: cute ? 30 : 26,
+        backgroundColor: hex(C.surface),
+        borderRadius: look === "calm" ? 26 : 30,
         padding: 14,
         flexDirection: "column",
         justifyContent: "space-between",

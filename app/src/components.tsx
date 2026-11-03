@@ -2,16 +2,16 @@ import DateTimePicker, { DateTimePickerAndroid, DateTimePickerEvent } from "@rea
 import React from "react";
 import { Platform, Pressable, StyleProp, StyleSheet, Text, TextProps, TextStyle, View, ViewStyle } from "react-native";
 import { fmt, iso, parse } from "./lib/core";
-import { Palette, usePalette } from "./theme";
+import { type Palette, usePalette } from "./theme";
 
 // ---------- type ----------
 type Variant = "display" | "title" | "h2" | "body" | "strong" | "small" | "label";
 export function T({ v = "body", color, style, ...rest }: TextProps & { v?: Variant; color?: keyof Palette }) {
-  const { c, f: fonts, cute } = usePalette();
+  const { c, f: fonts, illustrated } = usePalette();
   const base: Record<Variant, TextStyle> = {
     // Lining numbers keep every digit the same height; the extra line height leaves room for the serif's tall glyphs.
-    display: { fontFamily: fonts.display, fontSize: cute ? 58 : 54, lineHeight: 72, paddingTop: 4, fontVariant: ["lining-nums", "tabular-nums"] },
-    title: { fontFamily: fonts.display, fontSize: cute ? 28 : 26, lineHeight: 34 },
+    display: { fontFamily: fonts.display, fontSize: illustrated ? 56 : 54, lineHeight: 72, paddingTop: 4, fontVariant: ["lining-nums", "tabular-nums"] },
+    title: { fontFamily: fonts.display, fontSize: illustrated ? 28 : 26, lineHeight: 34 },
     h2: { fontFamily: fonts.display, fontSize: 21, lineHeight: 28 },
     body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },
     strong: { fontFamily: fonts.bold, fontSize: 16, lineHeight: 22 },
@@ -29,8 +29,8 @@ export function Card({ style, children, tone = "surface" }: { style?: StyleProp<
 }
 
 export function Pill({ label, onPress, primary, done, accessibilityLabel }: { label: string; onPress: () => void; primary?: boolean; done?: boolean; accessibilityLabel?: string }) {
-  const { c, f: fonts, cute } = usePalette();
-  const bgPrimary = cute ? c.rose : c.ink;
+  const { c, f: fonts, illustrated } = usePalette();
+  const bgPrimary = illustrated ? c.rose : c.ink;
   const bg = done ? c.sage : primary ? bgPrimary : c.surface;
   return (
     <Pressable

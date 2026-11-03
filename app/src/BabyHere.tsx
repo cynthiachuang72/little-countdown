@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleShee
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DateField, Pill, styles as ui, T } from "./components";
 import { iso, today } from "./lib/core";
+import type { LookName } from "./lib/looks";
 import { useStore } from "./store";
 import { fonts, usePalette } from "./theme";
 
@@ -10,7 +11,7 @@ import { fonts, usePalette } from "./theme";
  * Switches the app from the pregnancy countdown to counting down baby's milestones.
  * Also used to edit the birth date or name, or to switch back.
  */
-export default function BabyHere({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export default function BabyHere({ visible, onClose, onArrived }: { visible: boolean; onClose: () => void; onArrived: (from: LookName) => void }) {
   const { c, f } = usePalette();
   const insets = useSafeAreaInsets();
   const { state, update } = useStore();
@@ -27,8 +28,12 @@ export default function BabyHere({ visible, onClose }: { visible: boolean; onClo
 
   const save = () => {
     if (!born) return;
+    const arriving = !state.born;
+    const from = state.theme;
+    // On arrival the look follows the story (babyTheme null means "use the story"), unless one was already chosen.
     update((s) => ({ ...s, born, babyName: name.trim(), sample: false }));
     onClose();
+    if (arriving) onArrived(from);
   };
   const undo = () => {
     update((s) => ({ ...s, born: null }));

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
-import { normalize, SAMPLE, State } from "./lib/core";
+import { activeLook, normalize, SAMPLE, State } from "./lib/core";
 import { loadState, saveState } from "./persist";
 import { syncWidgets } from "./widgets/sync";
 import { scheduleReminders } from "./notifications";
@@ -52,7 +52,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreContext.Provider value={{ state, ready, update, tick }}>
-      <ThemeContext.Provider value={state.theme}>{children}</ThemeContext.Provider>
+      <ThemeContext.Provider value={{ look: activeLook(state), born: !!state.born, tick }}>{children}</ThemeContext.Provider>
     </StoreContext.Provider>
   );
 }
