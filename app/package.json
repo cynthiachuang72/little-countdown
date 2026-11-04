@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@bacons/apple-targets": "*",
+    "@expo-google-fonts/fredoka": "*",
+    "@expo-google-fonts/gaegu": "*",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@expo-google-fonts/young-serif": "*",
     "@expo/vector-icons": "*",
@@ -24,7 +26,8 @@
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-android-widget": "*",
-    "react-native-safe-area-context": "~5.10.1"
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-svg": "15.16.0"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

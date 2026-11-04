@@ -7,7 +7,7 @@ import { useStore } from "./store";
 import { fonts, usePalette } from "./theme";
 
 /** Bottom sheet for due date, leave date, name and the daily reminder. */
-export default function Settings({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export default function Settings({ visible, onClose, onBaby }: { visible: boolean; onClose: () => void; onBaby: () => void }) {
   const { c } = usePalette();
   const insets = useSafeAreaInsets();
   const { state, update } = useStore();
@@ -36,6 +36,7 @@ export default function Settings({ visible, onClose }: { visible: boolean; onClo
     update((s) => ({
       ...s,
       items: s.sample ? s.items.filter((i) => !i.id.startsWith("ex")) : s.items,
+      appts: s.sample ? s.appts.filter((a) => !a.id.startsWith("ex")) : s.appts,
       sample: false,
       name: name.trim(),
       due,
@@ -51,6 +52,16 @@ export default function Settings({ visible, onClose }: { visible: boolean; onClo
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, justifyContent: "flex-end" }} pointerEvents="box-none">
         <View style={[s.sheet, { backgroundColor: c.surface, paddingBottom: insets.bottom + 22 }]}>
           <ScrollView contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
+            <T v="h2">Settings</T>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <T v="strong">{state.born ? "Baby is here" : "Has baby arrived?"}</T>
+                <T v="small">{state.born ? "Change baby's birthday or name, or go back to the pregnancy countdown." : "Switch to counting down baby's milestones."}</T>
+              </View>
+              <Pill label={state.born ? "Edit" : "Baby is here!"} primary={!state.born} onPress={onBaby} />
+            </View>
+
+            <View style={[s.divider, { backgroundColor: c.line }]} />
             <T v="h2">Your dates</T>
             <View style={{ gap: 4 }}>
               <T v="small">Your name (for the greeting)</T>

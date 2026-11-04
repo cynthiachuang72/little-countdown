@@ -2,17 +2,17 @@ import DateTimePicker, { DateTimePickerAndroid, DateTimePickerEvent } from "@rea
 import React from "react";
 import { Platform, Pressable, StyleProp, StyleSheet, Text, TextProps, TextStyle, View, ViewStyle } from "react-native";
 import { fmt, iso, parse } from "./lib/core";
-import { fonts, Palette, usePalette } from "./theme";
+import { type Palette, usePalette } from "./theme";
 
 // ---------- type ----------
 type Variant = "display" | "title" | "h2" | "body" | "strong" | "small" | "label";
 export function T({ v = "body", color, style, ...rest }: TextProps & { v?: Variant; color?: keyof Palette }) {
-  const { c } = usePalette();
+  const { c, f: fonts, illustrated } = usePalette();
   const base: Record<Variant, TextStyle> = {
     // Lining numbers keep every digit the same height; the extra line height leaves room for the serif's tall glyphs.
-    display: { fontFamily: fonts.display, fontSize: 54, lineHeight: 72, paddingTop: 4, fontVariant: ["lining-nums", "tabular-nums"] },
-    title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32 },
-    h2: { fontFamily: fonts.display, fontSize: 21, lineHeight: 27 },
+    display: { fontFamily: fonts.display, fontSize: illustrated ? 56 : 54, lineHeight: 72, paddingTop: 4, fontVariant: ["lining-nums", "tabular-nums"] },
+    title: { fontFamily: fonts.display, fontSize: illustrated ? 28 : 26, lineHeight: 34 },
+    h2: { fontFamily: fonts.display, fontSize: 21, lineHeight: 28 },
     body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },
     strong: { fontFamily: fonts.bold, fontSize: 16, lineHeight: 22 },
     small: { fontFamily: fonts.semi, fontSize: 13, lineHeight: 18 },
@@ -24,13 +24,14 @@ export function T({ v = "body", color, style, ...rest }: TextProps & { v?: Varia
 
 // ---------- surfaces & buttons ----------
 export function Card({ style, children, tone = "surface" }: { style?: StyleProp<ViewStyle>; children: React.ReactNode; tone?: keyof Palette }) {
-  const { c } = usePalette();
-  return <View style={[{ backgroundColor: c[tone], borderRadius: 22, padding: 18, gap: 12 }, style]}>{children}</View>;
+  const { c, r } = usePalette();
+  return <View style={[{ backgroundColor: c[tone], borderRadius: r, padding: 18, gap: 12 }, style]}>{children}</View>;
 }
 
 export function Pill({ label, onPress, primary, done, accessibilityLabel }: { label: string; onPress: () => void; primary?: boolean; done?: boolean; accessibilityLabel?: string }) {
-  const { c } = usePalette();
-  const bg = done ? c.sage : primary ? c.ink : c.surface;
+  const { c, f: fonts, illustrated } = usePalette();
+  const bgPrimary = illustrated ? c.rose : c.ink;
+  const bg = done ? c.sage : primary ? bgPrimary : c.surface;
   return (
     <Pressable
       onPress={onPress}
@@ -57,7 +58,7 @@ export function IconButton({ onPress, label, children }: { onPress: () => void; 
 }
 
 export function Remove({ onPress, label }: { onPress: () => void; label: string }) {
-  const { c } = usePalette();
+  const { c, f: fonts } = usePalette();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={"Remove " + label} hitSlop={10} style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
       <Text style={{ fontSize: 20, color: c.muted, fontFamily: fonts.bold }}>×</Text>
@@ -66,7 +67,7 @@ export function Remove({ onPress, label }: { onPress: () => void; label: string 
 }
 
 export function Tag({ text, tone }: { text: string; tone: "auto" | "off" | "mine" }) {
-  const { c } = usePalette();
+  const { c, f: fonts } = usePalette();
   const map = { auto: [c.bg, c.muted], off: [c.sageSoft, c.sage], mine: [c.roseSoft, c.rose] } as const;
   const [bg, fg] = map[tone];
   return (

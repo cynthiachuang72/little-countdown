@@ -34,7 +34,7 @@ jobs:
 
       - name: Install packages
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm install
           npx expo install --fix
 
       - name: Type check
