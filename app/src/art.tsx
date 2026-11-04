@@ -1,6 +1,7 @@
 import React from "react";
 import Svg, { Circle, Ellipse, G, Line, Path, Rect } from "react-native-svg";
 import type { LookName } from "./lib/looks";
+import { NestArt } from "./nest";
 
 // All drawings share a 200 x 120 canvas and are scaled to fit.
 type Props = { width?: number; height?: number };
@@ -59,34 +60,8 @@ export function BloomArt({ week, ...p }: Props & { week: number }) {
   );
 }
 
-// ---------------------------------------------------------------- Little nest
-const SPECKLES: [number, number][] = [[94, 46], [106, 58], [90, 66], [110, 40], [100, 74], [86, 52], [114, 68], [98, 36], [104, 50], [92, 78]];
-
-export function nestCaption(week: number): string {
-  if (week >= 39) return "Crack, crack… almost time!";
-  if (week >= 37) return "A tiny crack appeared";
-  if (week >= 28) return "Getting a little wiggly in there";
-  return "Safe and warm in the nest";
-}
-
-/** An egg in a nest; it gains speckles as the weeks go and cracks near the due date. */
-export function NestArt({ week, ...p }: Props & { week: number }) {
-  const speckles = clamp(Math.floor(week / 4), 0, SPECKLES.length);
-  return (
-    <Svg {...box(p)}>
-      <Ellipse cx={100} cy={58} rx={24} ry={32} fill="#FFF8EE" stroke="#E9D3BA" strokeWidth={2} />
-      {SPECKLES.slice(0, speckles).map(([x, y], i) => <Circle key={i} cx={x} cy={y} r={i % 3 === 0 ? 2.6 : 2} fill="#E9B8A0" />)}
-      {week >= 37 ? <Path d="M 84 52 l 6 -5 l 5 6 l 6 -6 l 5 5" stroke="#B98A5E" strokeWidth={1.8} fill="none" strokeLinejoin="round" /> : null}
-      {week >= 39 ? <Path d="M 106 64 l 5 -4 l 4 5 l 5 -4" stroke="#B98A5E" strokeWidth={1.8} fill="none" strokeLinejoin="round" /> : null}
-      <Path d="M 50 78 Q 100 130 150 78 Z" fill="#B98A5E" />
-      <Path d="M 54 82 Q 100 96 146 82" stroke="#9C6F47" strokeWidth={3} fill="none" />
-      <Path d="M 60 92 Q 100 106 140 92" stroke="#9C6F47" strokeWidth={3} fill="none" />
-      <Path d="M 72 102 Q 100 112 128 102" stroke="#9C6F47" strokeWidth={2.5} fill="none" />
-      <Line x1={46} y1={80} x2={62} y2={72} stroke="#9C6F47" strokeWidth={2.5} strokeLinecap="round" />
-      <Line x1={154} y1={80} x2={138} y2={70} stroke="#9C6F47" strokeWidth={2.5} strokeLinecap="round" />
-    </Svg>
-  );
-}
+// The Little nest drawing lives in nest.tsx (it has its own moving egg).
+export { nestCaption } from "./nest";
 
 // ---------------------------------------------------------------- Sky
 export function SkyArt({ night, bg, ...p }: Props & { night: boolean; bg: string }) {

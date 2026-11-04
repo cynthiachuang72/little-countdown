@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { bloomStage, LookArt, nestCaption, storybookCaption } from "./art";
 import { Card, T } from "./components";
 import { plural } from "./lib/core";
 import { isNight, type LookName } from "./lib/looks";
+import { NestScene } from "./nest";
 import { usePalette } from "./theme";
 
 type Props = {
@@ -13,16 +14,33 @@ type Props = {
   next: { title: string; days: number } | null;
   babyName: string;
   bd: number;
+  /** How many little joys are tucked into the nest. */
+  joys?: number;
+  /** A pregnancy milestone that falls today (a butterfly visits the nest). */
+  milestoneToday?: string | null;
 };
 
 /** The drawing at the top of illustrated looks, with a line about where things are. */
-export default function Hero({ look, week, months, next, babyName, bd }: Props) {
+export default function Hero({ look, week, months, next, babyName, bd, joys = 0, milestoneToday = null }: Props) {
   const { c, f } = usePalette();
   const night = isNight();
+  const [peeking, setPeeking] = useState(false);
+
+  if (look === "nest") {
+    const caption = peeking ? `Peeking inside · week ${week}` : milestoneToday ? `A butterfly came for ${milestoneToday.toLowerCase()}!` : nestCaption(week);
+    return (
+      <Card style={{ alignItems: "center", gap: 4, paddingVertical: 12 }}>
+        <NestScene week={week} joys={joys} butterfly={!!milestoneToday} width={260} onPeek={setPeeking} />
+        <T style={{ fontFamily: f.display, fontSize: 17, lineHeight: 24, color: c.ink, textAlign: "center" }}>{caption}</T>
+        <T v="small" style={{ textAlign: "center" }}>
+          {joys ? `${joys} little ${plural(joys, "joy")} in your nest · ` : ""}Tap the egg, or hold to peek inside
+        </T>
+      </Card>
+    );
+  }
 
   let caption = "";
   if (look === "bloom") caption = `${bloomStage(week).caption} · week ${week}`;
-  else if (look === "nest") caption = nestCaption(week);
   else if (look === "sky") caption = night ? `Sweet dreams. ${bd} ${plural(bd, "sleep")} to go.` : `Hello, sunshine. ${bd} ${plural(bd, "day")} to go.`;
   else if (look === "storybook") caption = storybookCaption(months);
 

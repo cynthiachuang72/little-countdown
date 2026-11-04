@@ -19,6 +19,8 @@ export type State = {
   daysOff: DayOff[];
   appts: Appointment[];
   joys: Record<string, JoyRecord>;
+  /** Every day a little joy was done; each one adds a keepsake to the Little nest. Not pruned. */
+  nestJoys: string[];
   reminder: { on: boolean; hour: number; minute: number };
   /** Reminders the evening before and an hour before each appointment. */
   apptRemind: boolean;
@@ -45,6 +47,7 @@ export const SAMPLE: State = {
   daysOff: [],
   appts: [{ id: "exa1", title: "OB check-up (example)", date: "2026-11-12", time: "10:30", place: "" }],
   joys: {},
+  nestJoys: [],
   reminder: { on: false, hour: 8, minute: 30 },
   apptRemind: true,
   born: null,
@@ -64,6 +67,9 @@ export function normalize(raw: unknown): State {
     daysOff: Array.isArray(r.daysOff) ? r.daysOff : [],
     appts: Array.isArray(r.appts) ? r.appts : raw && (raw as State).sample === false ? [] : base.appts,
     joys: r.joys && typeof r.joys === "object" ? r.joys : {},
+    nestJoys: Array.isArray(r.nestJoys)
+      ? r.nestJoys.filter((k): k is string => typeof k === "string")
+      : Object.keys(r.joys || {}).filter((k) => (r.joys as Record<string, JoyRecord>)[k]?.d),
     reminder: { ...base.reminder, ...(r.reminder || {}) },
     theme: PREGNANCY_LOOKS.includes(r.theme as LookName) ? (r.theme as LookName) : "calm",
     babyTheme: BABY_LOOKS.includes(r.babyTheme as LookName) ? (r.babyTheme as LookName) : null,

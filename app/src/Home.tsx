@@ -4,7 +4,7 @@ import { Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleS
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, DateField, IconButton, Pill, Remove, styles as ui, T, Tag } from "./components";
 import {
-  addMonths, babyAge, comingUp, countWorkdays, monthsBetween, nextBabyMilestone, diff, fmt, iso, joyFor, offSet, parse, plural, pregnancy, pruneJoys, streak, today, usHolidays, weekdaysIn,
+  addMonths, babyAge, comingUp, milestones, countWorkdays, monthsBetween, nextBabyMilestone, diff, fmt, iso, joyFor, offSet, parse, plural, pregnancy, pruneJoys, streak, today, usHolidays, weekdaysIn,
 } from "./lib/core";
 import { AddAppointment, NextAppointment } from "./Appointments";
 import BabyHere from "./BabyHere";
@@ -41,6 +41,7 @@ export default function Home() {
   const [lookOpen, setLookOpen] = useState(false);
   const [celebrateFrom, setCelebrateFrom] = useState<LookName | null>(null);
   const months = born ? monthsBetween(born, t) : 0;
+  const milestoneToday = born ? null : milestones(due, leave, t).find((m) => diff(t, m.date) === 0)?.title ?? null;
 
   const hr = new Date().getHours();
   const greet = (hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening") + (state.name ? ", " + state.name : "");
@@ -54,7 +55,11 @@ export default function Home() {
 
   const toggleJoy = () => {
     const nowDone = !joyDone;
-    update((s) => ({ ...s, joys: pruneJoys({ ...s.joys, [key]: { ...(s.joys[key] || {}), d: nowDone } }, t) }));
+    update((s) => ({
+      ...s,
+      joys: pruneJoys({ ...s.joys, [key]: { ...(s.joys[key] || {}), d: nowDone } }, t),
+      nestJoys: nowDone ? [...s.nestJoys.filter((k) => k !== key), key] : s.nestJoys.filter((k) => k !== key),
+    }));
     if (nowDone) celebrate();
   };
   const nextJoy = () => update((s) => ({ ...s, joys: { ...s.joys, [key]: { s: (s.joys[key]?.s || 0) + 1, d: false } } }));
@@ -132,7 +137,8 @@ export default function Home() {
           </View>
 
           {illustrated ? (
-            <Hero look={look} week={preg.week} months={months} next={next ? { title: next.title, days: diff(t, next.date) } : null} babyName={state.babyName} bd={bd} />
+            <Hero look={look} week={preg.week} months={months} next={next ? { title: next.title, days: diff(t, next.date) } : null} babyName={state.babyName} bd={bd}
+              joys={state.nestJoys.length} milestoneToday={milestoneToday} />
           ) : null}
 
           {state.sample ? (
@@ -273,6 +279,9 @@ export default function Home() {
                 <Pill label="Another idea" onPress={nextJoy} />
               </View>
               {st > 0 ? <T v="small">{st > 1 ? `${st} days in a row of little joys` : "One little joy collected"}</T> : null}
+              {look === "nest" && !state.born ? (
+                <T v="small">{joyDone ? "Added to your nest" : "Each little joy you do adds something to your nest"}</T>
+              ) : null}
             </Card>
           </Animated.View>
 
