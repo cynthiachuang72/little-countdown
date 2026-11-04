@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DateField, Pill, styles as ui, T, TimeField } from "./components";
 import { askPermission } from "./notifications";
 import { useStore } from "./store";
-import { LookPicker } from "./LookSheet";
 import { fonts, usePalette } from "./theme";
 
 /** Bottom sheet for due date, leave date, name and the daily reminder. */
@@ -53,10 +52,7 @@ export default function Settings({ visible, onClose, onBaby }: { visible: boolea
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, justifyContent: "flex-end" }} pointerEvents="box-none">
         <View style={[s.sheet, { backgroundColor: c.surface, paddingBottom: insets.bottom + 22 }]}>
           <ScrollView contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
-            <T v="h2">Look</T>
-            <LookPicker />
-
-            <View style={[s.divider, { backgroundColor: c.line }]} />
+            <T v="h2">Settings</T>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <T v="strong">{state.born ? "Baby is here" : "Has baby arrived?"}</T>
