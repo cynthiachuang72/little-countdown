@@ -163,12 +163,81 @@ export function FriendArt({ months, ...p }: Props & { months: number }) {
   );
 }
 
+// ---------------------------------------------------------------- Starlight (after birth, follows Sky)
+function starPath(cx: number, cy: number, R: number, r: number): string {
+  let d = "";
+  for (let i = 0; i < 10; i++) {
+    const a = (-90 + i * 36) * (Math.PI / 180);
+    const rad = i % 2 ? r : R;
+    d += `${i ? "L" : "M"} ${(cx + Math.cos(a) * rad).toFixed(1)} ${(cy + Math.sin(a) * rad).toFixed(1)} `;
+  }
+  return d + "Z";
+}
+
+/** 12 points spaced evenly around a heart, starting at the bottom tip; one lights up each month. */
+const HEART: [number, number][] = (() => {
+  const pt = (t: number): [number, number] => {
+    const x = 16 * Math.sin(t) ** 3;
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    return [134 + x * 2.3, 54 - y * 2.3];
+  };
+  const fine = Array.from({ length: 721 }, (_, i) => pt(Math.PI + (2 * Math.PI * i) / 720));
+  const cum = [0];
+  for (let i = 1; i < fine.length; i++) cum.push(cum[i - 1] + Math.hypot(fine[i][0] - fine[i - 1][0], fine[i][1] - fine[i - 1][1]));
+  const total = cum[cum.length - 1];
+  return Array.from({ length: 12 }, (_, k) => fine[cum.findIndex((d) => d >= (total * k) / 12)]);
+})();
+
+export function starlightCaption(months: number, night: boolean, name: string): string {
+  const who = name || "baby";
+  const m = clamp(months, 0, 12);
+  if (!night) return m >= 12 ? `${who}'s heart of stars is complete` : "Your little star is napping on a cloud";
+  if (m === 0) return "A new little star in the sky";
+  if (m >= 12) return `A whole heart of stars for ${who}`;
+  return `${m} ${m === 1 ? "star" : "stars"} in ${who}'s sky`;
+}
+
+/** Day: a little star naps on a cloud. Night: a star for each month, joining into a heart by the first birthday. */
+export function StarlightArt({ months, night, bg, ...p }: Props & { months: number; night: boolean; bg: string }) {
+  const m = clamp(months, 0, 12);
+  if (!night) {
+    return (
+      <Svg {...box(p)}>
+        <Circle cx={158} cy={32} r={18} fill="#FFC94A" />
+        <Cloud x={70} y={84} s={1.3} />
+        <Path d={starPath(70, 60, 17, 7.8)} fill="#FFE7A3" stroke="#F2B544" strokeWidth={1.5} strokeLinejoin="round" />
+        <Path d="M 63 61 q 2.4 2.4 4.8 0 M 72 61 q 2.4 2.4 4.8 0" stroke="#5B4A2A" strokeWidth={1.3} fill="none" strokeLinecap="round" />
+        <Ellipse cx={61} cy={66} rx={2.6} ry={1.5} fill="#F4A7B9" />
+        <Ellipse cx={79} cy={66} rx={2.6} ry={1.5} fill="#F4A7B9" />
+        <Cloud x={160} y={88} s={0.7} />
+        {m >= 1 ? <Path d={`M 96 50 q 3 -3 0 -6 M 102 46 q 3 -3 0 -6`} stroke="#5B7593" strokeWidth={1.2} fill="none" opacity={0.6} /> : null}
+      </Svg>
+    );
+  }
+  const lit = HEART.slice(0, m);
+  const line = lit.map(([x, y], i) => `${i ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`).join(" ") + (m >= 12 ? " Z" : "");
+  return (
+    <Svg {...box(p)}>
+      <Circle cx={46} cy={44} r={22} fill="#FFE7A3" />
+      <Circle cx={57} cy={36} r={20} fill={bg} />
+      {[[20, 96, 1.4], [92, 16, 1.2], [186, 100, 1.3], [104, 104, 1.1], [12, 30, 1.2]].map(([x, y, r], i) => <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF" />)}
+      {m >= 2 ? <Path d={line} stroke="#FFE7A3" strokeWidth={1.2} fill="none" opacity={0.55} /> : null}
+      {HEART.map(([x, y], i) => (i < m
+        ? <Path key={i} d={starPath(x, y, m >= 12 ? 4.8 : 4.2, m >= 12 ? 2.2 : 1.9)} fill="#FFE7A3" />
+        : <Circle key={i} cx={x} cy={y} r={1.1} fill="#B9B6E8" opacity={0.35} />))}
+      <Path d={starPath(70, 80, 10, 4.6)} fill="#FFE7A3" />
+      <Path d="M 66 81 q 1.5 1.5 3 0 M 71 81 q 1.5 1.5 3 0" stroke="#5B4A2A" strokeWidth={1.1} fill="none" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 /** The drawing for a look at a given point in the journey, or null for Calm. */
 export function LookArt({ look, week, months, night, bg, ...p }: Props & { look: LookName; week: number; months: number; night: boolean; bg: string }) {
   switch (look) {
     case "bloom": return <BloomArt week={week} {...p} />;
     case "nest": return <NestArt week={week} {...p} />;
     case "sky": return <SkyArt night={night} bg={bg} {...p} />;
+    case "starlight": return <StarlightArt months={months} night={night} bg={bg} {...p} />;
     case "storybook": return <StorybookArt months={months} {...p} />;
     case "friend": return <FriendArt months={months} {...p} />;
     default: return null;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { bloomStage, LookArt, nestCaption, storybookCaption } from "./art";
+import { bloomStage, LookArt, nestCaption, starlightCaption, storybookCaption } from "./art";
 import { Card, T } from "./components";
 import { plural } from "./lib/core";
 import { isNight, type LookName } from "./lib/looks";
@@ -43,6 +43,7 @@ export default function Hero({ look, week, months, next, babyName, bd, joys = 0,
   if (look === "bloom") caption = `${bloomStage(week).caption} · week ${week}`;
   else if (look === "sky") caption = night ? `Sweet dreams. ${bd} ${plural(bd, "sleep")} to go.` : `Hello, sunshine. ${bd} ${plural(bd, "day")} to go.`;
   else if (look === "storybook") caption = storybookCaption(months);
+  else if (look === "starlight") caption = starlightCaption(months, night, babyName);
 
   if (look === "friend") {
     const who = babyName || "baby";
@@ -61,8 +62,8 @@ export default function Hero({ look, week, months, next, babyName, bd, joys = 0,
   }
 
   return (
-    <Card style={{ alignItems: "center", gap: 4, paddingVertical: 12, backgroundColor: look === "sky" || look === "storybook" ? c.bg : c.surface }}>
-      <LookArt look={look} week={week} months={months} night={night} bg={look === "sky" || look === "storybook" ? c.bg : c.surface} width={240} height={144} />
+    <Card style={{ alignItems: "center", gap: 4, paddingVertical: 12, backgroundColor: look === "sky" || look === "storybook" || look === "starlight" ? c.bg : c.surface }}>
+      <LookArt look={look} week={week} months={months} night={night} bg={look === "sky" || look === "storybook" || look === "starlight" ? c.bg : c.surface} width={240} height={144} />
       <T style={{ fontFamily: f.display, fontSize: look === "storybook" ? 22 : 17, lineHeight: 26, color: c.ink, textAlign: "center" }}>{caption}</T>
     </Card>
   );
