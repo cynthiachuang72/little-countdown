@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Animated, Easing, View } from "react-native";
 import Svg from "react-native-svg";
 import {
-  Bee, BLOOM_PIVOT, BloomBase, bloomHead, BloomPlant, BloomSparkles, FriendBody, FriendEyes, FriendEyesClosed, FriendShells,
+  Balloons, Bee, BLOOM_PIVOT, FriendToys, PartyHat, storyPivot, BloomBase, bloomHead, BloomPlant, BloomSparkles, FriendBody, FriendEyes, FriendEyesClosed, FriendShells,
   FriendWing, LITTLE_STAR, Petal, ShootingStar, SkyCloudA, SkyCloudB, SkyMoon, SkyRays, SkyStars, SkySun, SkySunFace, SleepyZ,
-  StarlightDayBack, StarlightDayStar, StarlightHeartStars, StarlightNightBack, StarlightNightStar, STORY_PIVOT, StoryCloudA,
+  StarlightDayBack, StarlightDayStar, StarlightHeartStars, StarlightNightBack, StarlightNightStar, StoryCloudA,
   StoryCloudB, StoryDrops, StoryPlant, StoryPot, StoryRainCloud, SUN_CENTER, WING_PIVOTS,
 } from "./art";
+import { Card, T } from "./components";
 import type { LookName } from "./lib/looks";
+import { usePalette } from "./theme";
 
 // Moving versions of the illustrated looks. Each scene stacks full-size layers drawn on the same
 // 200 x 120 canvas and moves some of them: gentle loops all the time, plus a reaction when tapped.
@@ -85,7 +87,7 @@ function Layer({ w, children, style }: { w: number; children: React.ReactNode; s
   );
 }
 
-type SceneProps = { w: number; tap: number; still: boolean };
+type SceneProps = { w: number; tap: number; still: boolean; birthday: boolean };
 
 // ---------------------------------------------------------------- Bloom
 function BloomScene({ w, tap, still, week, milestone }: SceneProps & { week: number; milestone: boolean }) {
@@ -166,12 +168,13 @@ function ShootingLayer({ w, v }: { w: number; v: AV }) {
 }
 
 // ---------------------------------------------------------------- Storybook
-function StoryScene({ w, tap, still, months }: SceneProps & { months: number }) {
+function StoryScene({ w, tap, still, months, birthday }: SceneProps & { months: number }) {
   const s = w / 200;
   const sway = useLoop(4600, !still);
   const driftA = useLoop(13000, !still);
   const driftB = useLoop(17000, !still);
   const water = useOnce(tap, 1800, still);
+  const float = useLoop(3000, !still && birthday);
   return (
     <View style={{ width: w, height: w * 0.6 }}>
       <Layer w={w} style={{ transform: [{ translateX: wave(driftA, 10 * s) }] }}><StoryCloudA /></Layer>
@@ -182,18 +185,19 @@ function StoryScene({ w, tap, still, months }: SceneProps & { months: number }) 
         transform: [{ translateY: water.interpolate({ inputRange: [0, 0.15, 0.6, 1], outputRange: [0, 0, 34 * s, 34 * s] }) }],
       }}><StoryDrops /></Layer>
       <Layer w={w} style={{
-        transform: about(STORY_PIVOT, s, [
+        transform: about(storyPivot(months), s, [
           { rotate: wave(sway, 2.5, "deg") },
           { scale: water.interpolate({ inputRange: [0, 0.55, 0.7, 0.85, 1], outputRange: [1, 1, 1.1, 0.98, 1] }) },
         ]),
       }}><StoryPlant months={months} /></Layer>
-      <Layer w={w}><StoryPot /></Layer>
+      <Layer w={w}><StoryPot months={months} /></Layer>
+      {birthday ? <Layer w={w} style={{ transform: [{ translateY: wave(float, -3 * s) }] }}><Balloons x={months > 12 ? 64 : 76} y={months > 12 ? 104 : 90} /></Layer> : null}
     </View>
   );
 }
 
 // ---------------------------------------------------------------- Little friend
-function FriendScene({ w, tap, still, months }: SceneProps & { months: number }) {
+function FriendScene({ w, tap, still, months, birthday }: SceneProps & { months: number }) {
   const s = w / 200;
   const bob = useLoop(2600, !still);
   const blink = useLoop(4200, !still);
@@ -205,7 +209,7 @@ function FriendScene({ w, tap, still, months }: SceneProps & { months: number })
   });
   return (
     <View style={{ width: w, height: w * 0.6 }}>
-      <Layer w={w}><FriendShells months={months} /></Layer>
+      <Layer w={w}><FriendShells months={months} /><FriendToys months={months} /></Layer>
       <Animated.View pointerEvents="none" style={{
         position: "absolute", width: w, height: w * 0.6,
         transform: [
@@ -217,19 +221,21 @@ function FriendScene({ w, tap, still, months }: SceneProps & { months: number })
         <Layer w={w} style={{ transform: about(WING_PIVOTS[1], s, [{ rotate: flapDeg(1) }]) }}><FriendWing side={1} months={months} /></Layer>
         <Layer w={w}><FriendBody months={months} /><FriendEyes /></Layer>
         <Layer w={w} style={{ opacity: blink.interpolate({ inputRange: [0, 0.9, 0.92, 0.96, 1], outputRange: [0, 0, 1, 0, 0] }) }}><FriendEyesClosed /></Layer>
+        {birthday ? <Layer w={w}><PartyHat x={100} y={34} /></Layer> : null}
       </Animated.View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------- Starlight
-function StarlightScene({ w, tap, still, months, night, bg }: SceneProps & { months: number; night: boolean; bg: string }) {
+function StarlightScene({ w, tap, still, months, night, bg, birthday }: SceneProps & { months: number; night: boolean; bg: string }) {
   const s = w / 200;
   const breathe = useLoop(3600, !still);
   const twinkle = useLoop(2400, !still && night);
   const z = useLoop(3200, !still && !night);
   const bounce = useOnce(night ? 0 : tap, 700, still);
-  const auto = useEvery(14000, night && !still);
+  // On a birthday night the shooting stars come much more often.
+  const auto = useEvery(birthday ? 3500 : 14000, night && !still);
   const shoot = useOnce(night ? tap * 1000 + auto : 0, 1200, still);
   const breatheScale = breathe.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.06, 1] });
   if (night) {
@@ -238,7 +244,10 @@ function StarlightScene({ w, tap, still, months, night, bg }: SceneProps & { mon
         <Layer w={w}><StarlightNightBack months={months} bg={bg} /></Layer>
         <Layer w={w} style={{ opacity: twinkle.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.4, 1] }) }}><StarlightHeartStars months={months} set={0} /></Layer>
         <Layer w={w} style={{ opacity: twinkle.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.45, 1, 0.45] }) }}><StarlightHeartStars months={months} set={1} /></Layer>
-        <Layer w={w} style={{ transform: about(LITTLE_STAR.night, s, [{ scale: breatheScale }]) }}><StarlightNightStar /></Layer>
+        <Layer w={w} style={{ transform: about(LITTLE_STAR.night, s, [{ scale: breatheScale }]) }}>
+          <StarlightNightStar />
+          {birthday ? <PartyHat x={70} y={72} s={0.5} /> : null}
+        </Layer>
         <ShootingLayer w={w} v={shoot} />
       </View>
     );
@@ -251,7 +260,10 @@ function StarlightScene({ w, tap, still, months, night, bg }: SceneProps & { mon
           { scale: breatheScale },
           { translateY: bounce.interpolate({ inputRange: [0, 0.4, 0.7, 1], outputRange: [0, -10 * s, 0, 0] }) },
         ]),
-      }}><StarlightDayStar /></Layer>
+      }}>
+        <StarlightDayStar />
+        {birthday ? <PartyHat x={70} y={45} s={0.75} /> : null}
+      </Layer>
       <Layer w={w} style={{
         opacity: z.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1, 0] }),
         transform: [{ translateX: z.interpolate({ inputRange: [0, 1], outputRange: [0, 10 * s] }) }, { translateY: z.interpolate({ inputRange: [0, 1], outputRange: [0, -16 * s] }) }],
@@ -264,11 +276,11 @@ function StarlightScene({ w, tap, still, months, night, bg }: SceneProps & { mon
  * The moving drawing for an illustrated look (not Little nest, which has its own scene, or Calm).
  * Bump `tap` to play the tap reaction.
  */
-export function LookScene({ look, width, tap, week, months, night, bg, milestone }: {
-  look: LookName; width: number; tap: number; week: number; months: number; night: boolean; bg: string; milestone: boolean;
+export function LookScene({ look, width, tap, week, months, night, bg, milestone, birthday = false }: {
+  look: LookName; width: number; tap: number; week: number; months: number; night: boolean; bg: string; milestone: boolean; birthday?: boolean;
 }) {
   const still = useStill();
-  const p = { w: width, tap, still };
+  const p = { w: width, tap, still, birthday };
   switch (look) {
     case "bloom": return <BloomScene {...p} week={week} milestone={milestone} />;
     case "sky": return <SkyScene {...p} night={night} bg={bg} />;
@@ -309,5 +321,50 @@ export function BreathingDot({ run, style }: { run: boolean; style: object }) {
     <Animated.View
       style={[style, { transform: [{ scale: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] }) }] }]}
     />
+  );
+}
+
+// ---------------------------------------------------------------- Birthdays
+export function ordinal(n: number): string {
+  const v = n % 100;
+  const suffix = v >= 11 && v <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th";
+  return n + suffix;
+}
+
+const CONFETTI = ["#F4A7B9", "#FFE08A", "#9FD0E6", "#9CE0C4", "#C7B8FF", "#F2A65A"];
+
+/** A card shown on baby's birthday, with confetti gently falling through it. Shows in every look, including Calm. */
+export function BirthdayCard({ years, name }: { years: number; name: string }) {
+  const { c, f } = usePalette();
+  const still = useStill();
+  const fall = useLoop(4200, !still);
+  const [width, setWidth] = useState(320);
+  const bits = Array.from({ length: 16 }, (_, i) => ({ x: ((i * 37) % 100) / 100, phase: (i % 5) / 5, size: 5 + (i % 3) * 2, color: CONFETTI[i % CONFETTI.length] }));
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <Card tone="roseSoft" style={{ overflow: "hidden", alignItems: "center", paddingVertical: 22 }}>
+        {bits.map((b, i) => {
+          // Each piece is offset in time so they don't all fall together.
+          const y = b.phase === 0
+            ? fall.interpolate({ inputRange: [0, 1], outputRange: [-20, 100] })
+            : fall.interpolate({ inputRange: [0, 1 - b.phase, 1 - b.phase + 0.001, 1], outputRange: [b.phase * 120 - 20, 100, -20, b.phase * 120 - 20] });
+          return (
+            <Animated.View
+              key={i}
+              pointerEvents="none"
+              style={{
+                position: "absolute", top: 0, left: b.x * (width - 10), width: b.size, height: b.size * 1.4, borderRadius: 2, backgroundColor: b.color,
+                opacity: 0.85,
+                transform: [{ translateY: still ? b.phase * 100 : y }, { rotate: fall.interpolate({ inputRange: [0, 1], outputRange: ["0deg", `${i % 2 ? 360 : -360}deg`] }) }],
+              } as object}
+            />
+          );
+        })}
+        <T style={{ fontFamily: f.display, fontSize: 26, lineHeight: 34, color: c.ink, textAlign: "center" }}>
+          Happy {ordinal(years)} birthday{name ? `, ${name}` : ""}!
+        </T>
+        <T v="small" style={{ textAlign: "center" }}>{years === 1 ? "One whole year together." : `${years} whole years together.`}</T>
+      </Card>
+    </View>
   );
 }

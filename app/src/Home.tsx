@@ -10,7 +10,7 @@ import { AddAppointment, NextAppointment } from "./Appointments";
 import BabyHere from "./BabyHere";
 import Celebration from "./Celebration";
 import Hero from "./Hero";
-import { BreathingDot, CountUp } from "./scenes";
+import { BirthdayCard, BreathingDot, CountUp } from "./scenes";
 import LookSheet from "./LookSheet";
 import type { LookName } from "./lib/looks";
 import Settings from "./Settings";
@@ -43,6 +43,9 @@ export default function Home() {
   const [celebrateFrom, setCelebrateFrom] = useState<LookName | null>(null);
   const months = born ? monthsBetween(born, t) : 0;
   const milestoneToday = born ? null : milestones(due, leave, t).find((m) => diff(t, m.date) === 0)?.title ?? null;
+  // Baby's birthday (1st and up): a surprise in every look.
+  const years = born ? Math.floor(months / 12) : 0;
+  const birthday = !!born && years >= 1 && diff(t, addMonths(born, years * 12)) === 0;
 
   const hr = new Date().getHours();
   const greet = (hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening") + (state.name ? ", " + state.name : "");
@@ -137,9 +140,11 @@ export default function Home() {
             </View>
           </View>
 
+          {birthday ? <BirthdayCard years={years} name={state.babyName} /> : null}
+
           {illustrated ? (
             <Hero look={look} week={preg.week} months={months} next={next ? { title: next.title, days: diff(t, next.date) } : null} babyName={state.babyName} bd={bd}
-              joys={state.nestJoys.length} milestoneToday={milestoneToday} />
+              joys={state.nestJoys.length} milestoneToday={milestoneToday} birthday={birthday} />
           ) : null}
 
           {state.sample ? (

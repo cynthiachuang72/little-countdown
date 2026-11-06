@@ -65,6 +65,35 @@ export function ShootingStar() {
   );
 }
 
+/** A party hat with its bottom center at (x, y). */
+export function PartyHat({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  return (
+    <G>
+      <Path d={`M ${x - 10 * s} ${y} L ${x} ${y - 24 * s} L ${x + 10 * s} ${y} Z`} fill="#F29BB5" />
+      <Circle cx={x - 3 * s} cy={y - 7 * s} r={1.8 * s} fill="#FFE08A" />
+      <Circle cx={x + 3 * s} cy={y - 14 * s} r={1.6 * s} fill="#9FD0E6" />
+      <Circle cx={x + 4 * s} cy={y - 4 * s} r={1.5 * s} fill="#FFFFFF" />
+      <Circle cx={x} cy={y - 25 * s} r={3 * s} fill="#FFE08A" />
+    </G>
+  );
+}
+
+/** Three birthday balloons tied at (x, y). */
+export function Balloons({ x, y }: { x: number; y: number }) {
+  const b: [number, number, string][] = [[-12, -56, "#F4A7B9"], [2, -64, "#FFE08A"], [14, -52, "#9FD0E6"]];
+  return (
+    <G>
+      {b.map(([dx, dy, col], i) => (
+        <G key={i}>
+          <Path d={`M ${x} ${y} Q ${x + dx * 0.4} ${y + dy * 0.5} ${x + dx} ${y + dy + 9}`} stroke="#8F7360" strokeWidth={0.9} fill="none" />
+          <Ellipse cx={x + dx} cy={y + dy} rx={7} ry={9} fill={col} />
+          <Path d={`M ${x + dx - 2} ${y + dy + 9} l 2 3 l 2 -3 Z`} fill={col} />
+        </G>
+      ))}
+    </G>
+  );
+}
+
 // ---------------------------------------------------------------- Bloom
 /** Seed (before week 8), sprout, leaves, bud (28), opening (33), full flower (37+). */
 export function bloomStage(week: number): { stage: number; caption: string } {
@@ -197,13 +226,59 @@ export function storybookCaption(months: number): string {
   if (months < 1) return "A brand-new seedling";
   if (months < 6) return "Growing a little every day";
   if (months < 12) return "Getting taller and stronger";
-  return "A whole year of growing";
+  if (months < 13) return "A whole year of growing";
+  if (months < 24) return "Planted in the garden, growing into a little tree";
+  if (months < 36) return "A little tree, taller every season";
+  return "A tree with a swing to play on";
 }
-export const STORY_PIVOT: [number, number] = [100, 92];
+const STORY_POT_PIVOT: [number, number] = [100, 92];
+const TREE_BASE: [number, number] = [100, 104];
+/** Where the plant sways from: the pot in the first year, the ground after. */
+export const storyPivot = (months: number): [number, number] => (months > 12 ? TREE_BASE : STORY_POT_PIVOT);
+
+type Season = "spring" | "summer" | "autumn" | "winter";
+function seasonNow(): Season {
+  const m = new Date().getMonth();
+  return m >= 2 && m <= 4 ? "spring" : m >= 5 && m <= 7 ? "summer" : m >= 8 && m <= 10 ? "autumn" : "winter";
+}
+const CANOPY: Record<Season, [string, string]> = {
+  spring: ["#8DCB84", "#F4A7B9"],
+  summer: ["#6DBB6F", "#8DCB84"],
+  autumn: ["#F2A65A", "#F6C453"],
+  winter: ["#B7D8C8", "#FFFFFF"],
+};
+
+/** After the first birthday the seedling is planted in the garden and grows into a small tree, changing with the seasons. */
+function StoryTree({ months }: { months: number }) {
+  const g = clamp((months - 12) / 48, 0, 1);
+  const h = 34 + g * 22, top = 104 - h, R = 20 + g * 10, tw = 6 + g * 4;
+  const [main, dots] = CANOPY[seasonNow()];
+  const cy = top - 4;
+  return (
+    <G>
+      {months >= 36 ? <Path d="M 102 78 Q 126 70 150 66" stroke="#8A6244" strokeWidth={4} fill="none" strokeLinecap="round" /> : null}
+      {months >= 36 ? (
+        <G>
+          <Line x1={136} y1={70} x2={136} y2={92} stroke="#8A6244" strokeWidth={1.4} />
+          <Line x1={146} y1={67} x2={146} y2={92} stroke="#8A6244" strokeWidth={1.4} />
+          <Rect x={131} y={91} width={20} height={4} rx={2} fill="#E8708F" />
+        </G>
+      ) : null}
+      <Path d={`M ${100 - tw / 2} 104 L ${100 - tw / 3} ${top + 6} L ${100 + tw / 3} ${top + 6} L ${100 + tw / 2} 104 Z`} fill="#9C6F47" />
+      <Circle cx={100} cy={cy} r={R} fill={main} />
+      <Circle cx={100 - R * 0.7} cy={cy + R * 0.25} r={R * 0.65} fill={main} />
+      <Circle cx={100 + R * 0.7} cy={cy + R * 0.2} r={R * 0.7} fill={main} />
+      {[[-0.4, -0.3], [0.35, -0.45], [0.1, 0.15], [-0.75, 0.35], [0.8, 0.3], [-0.1, -0.7], [0.55, 0.05]].map(([dx, dy], i) => (
+        <Circle key={i} cx={100 + dx * R} cy={cy + dy * R} r={2.2 + g} fill={dots} />
+      ))}
+    </G>
+  );
+}
 
 export function StoryCloudA() { return <Cloud x={42} y={30} s={0.9} />; }
 export function StoryCloudB() { return <Cloud x={160} y={44} s={0.75} />; }
 export function StoryPlant({ months }: { months: number }) {
+  if (months > 12) return <StoryTree months={months} />;
   const m = clamp(months, 0, 12);
   const top = 82 - m * 3.6; // stem gets taller each month
   const pairs = 1 + Math.floor(m / 4);
@@ -218,7 +293,8 @@ export function StoryPlant({ months }: { months: number }) {
     </G>
   );
 }
-export function StoryPot() {
+export function StoryPot({ months = 0 }: { months?: number }) {
+  if (months > 12) return <Ellipse cx={100} cy={110} rx={76} ry={10} fill={seasonNow() === "winter" ? "#E6F0F6" : "#A6D49A"} />;
   return <G><Path d="M 80 92 L 120 92 L 114 114 L 86 114 Z" fill="#F29BB5" /><Rect x={77} y={88} width={46} height={7} rx={3} fill="#E8708F" /></G>;
 }
 /** A small rain cloud that waters the seedling when tapped. */
@@ -230,7 +306,7 @@ export function StoryDrops() {
 }
 
 export function StorybookArt({ months, ...p }: Props & { months: number }) {
-  return <Svg {...box(p)}><StoryCloudA /><StoryCloudB /><StoryPlant months={months} /><StoryPot /></Svg>;
+  return <Svg {...box(p)}><StoryCloudA /><StoryCloudB /><StoryPlant months={months} /><StoryPot months={months} /></Svg>;
 }
 
 // ---------------------------------------------------------------- Little friend (after birth)
@@ -269,6 +345,43 @@ export function FriendBody({ months }: { months: number }) {
     </G>
   );
 }
+/** Toys that join the chick each year after the first birthday: a ball, a bucket and spade, a kite, then blocks. */
+export function FriendToys({ months }: { months: number }) {
+  return (
+    <G>
+      {months >= 13 ? (
+        <G>
+          <Circle cx={154} cy={100} r={7} fill="#E8708F" />
+          <Path d="M 147 100 Q 154 94 161 100 M 147 100 Q 154 106 161 100" stroke="#FFFFFF" strokeWidth={1.4} fill="none" />
+        </G>
+      ) : null}
+      {months >= 24 ? (
+        <G>
+          <Path d="M 38 92 L 54 92 L 51 106 L 41 106 Z" fill="#7FB6E0" />
+          <Path d="M 40 92 Q 46 84 52 92" stroke="#30507A" strokeWidth={1.2} fill="none" />
+          <Line x1={60} y1={106} x2={66} y2={88} stroke="#C46A4B" strokeWidth={1.8} strokeLinecap="round" />
+          <Ellipse cx={66.5} cy={86} rx={3} ry={4} fill="#F6C453" />
+        </G>
+      ) : null}
+      {months >= 36 ? (
+        <G>
+          <Path d="M 128 56 Q 150 50 160 34" stroke="#8F7360" strokeWidth={0.9} fill="none" />
+          <Path d="M 164 14 L 174 26 L 164 38 L 154 26 Z" fill="#F29BB5" />
+          <Path d="M 164 14 L 164 38 M 154 26 L 174 26" stroke="#FFFFFF" strokeWidth={1} />
+          <Path d="M 164 38 q 4 6 0 10 q -4 4 1 9" stroke="#8F7360" strokeWidth={0.9} fill="none" />
+        </G>
+      ) : null}
+      {months >= 48 ? (
+        <G>
+          <Rect x={170} y={96} width={11} height={11} rx={1.5} fill="#9CE0C4" />
+          <Rect x={182} y={96} width={11} height={11} rx={1.5} fill="#F6C453" />
+          <Rect x={176} y={85} width={11} height={11} rx={1.5} fill="#C7B8FF" />
+        </G>
+      ) : null}
+    </G>
+  );
+}
+
 export function FriendEyes() {
   return (
     <G>
@@ -295,6 +408,7 @@ export function FriendArt({ months, ...p }: Props & { months: number }) {
   return (
     <Svg {...box(p)}>
       <FriendShells months={months} />
+      <FriendToys months={months} />
       <FriendWing side={0} months={months} />
       <FriendWing side={1} months={months} />
       <FriendBody months={months} />
@@ -318,8 +432,31 @@ const HEART: [number, number][] = (() => {
   return Array.from({ length: 12 }, (_, k) => fine[cum.findIndex((d) => d >= (total * k) / 12)]);
 })();
 
+/** One small constellation for each birthday after the first: a flower, a rainbow arc, a crescent, a kite. */
+const YEAR_SKIES: { color: string; pts: [number, number][]; closed?: boolean; lines: boolean }[] = [
+  { color: "#F4A7B9", lines: false, pts: [[84, 17], ...[0, 72, 144, 216, 288].map((a) => [84 + Math.cos(((a - 90) * Math.PI) / 180) * 7, 17 + Math.sin(((a - 90) * Math.PI) / 180) * 7] as [number, number])] },
+  { color: "#9CE0C4", lines: true, pts: [180, 225, 270, 315, 360].map((a) => [176 + Math.cos((a * Math.PI) / 180) * 13, 104 + Math.sin((a * Math.PI) / 180) * 13] as [number, number]) },
+  { color: "#C7B8FF", lines: true, pts: [100, 150, 200, 250, 300].map((a) => [26 + Math.cos((a * Math.PI) / 180) * 10, 92 + Math.sin((a * Math.PI) / 180) * 10] as [number, number]) },
+  { color: "#9FD0E6", lines: true, closed: true, pts: [[112, 98], [120, 106], [112, 114], [104, 106]] },
+];
+export function StarlightYears({ months }: { months: number }) {
+  const years = Math.floor(months / 12);
+  return (
+    <G>
+      {YEAR_SKIES.slice(0, Math.max(0, Math.min(4, years - 1))).map((c, k) => (
+        <G key={k}>
+          {c.lines ? <Path d={c.pts.map(([x, y], i) => `${i ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`).join(" ") + (c.closed ? " Z" : "")} stroke={c.color} strokeWidth={1} fill="none" opacity={0.5} /> : null}
+          {c.pts.map(([x, y], i) => <Path key={i} d={starPath(x, y, 3, 1.4)} fill={c.color} />)}
+        </G>
+      ))}
+    </G>
+  );
+}
+
 export function starlightCaption(months: number, night: boolean, name: string): string {
   const who = name || "baby";
+  const years = Math.floor(months / 12);
+  if (years >= 2) return night ? `${years} years of stars for ${who}` : `${who}'s little star is napping on a cloud`;
   const m = clamp(months, 0, 12);
   if (!night) return m >= 12 ? `${who}'s heart of stars is complete` : "Your little star is napping on a cloud";
   if (m === 0) return "A new little star in the sky";
@@ -358,6 +495,7 @@ export function StarlightNightBack({ months, bg }: { months: number; bg: string 
       {[[20, 96, 1.4], [92, 16, 1.2], [186, 100, 1.3], [104, 104, 1.1], [12, 30, 1.2]].map(([x, y, r], i) => <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF" />)}
       {m >= 2 ? <Path d={line} stroke="#FFE7A3" strokeWidth={1.2} fill="none" opacity={0.55} /> : null}
       {HEART.map(([x, y], i) => (i >= m ? <Circle key={i} cx={x} cy={y} r={1.1} fill="#B9B6E8" opacity={0.35} /> : null))}
+      <StarlightYears months={months} />
     </G>
   );
 }
