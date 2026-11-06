@@ -30,13 +30,14 @@ export default function BabyHere({ visible, onClose, onArrived }: { visible: boo
     if (!born) return;
     const arriving = !state.born;
     const from = state.theme;
-    // On arrival the look follows the story (babyTheme null means "use the story"), unless one was already chosen.
-    update((s) => ({ ...s, born, babyName: name.trim(), sample: false }));
+    // On arrival the look always follows the story from the pregnancy look (babyTheme null means "use the story").
+    update((s) => ({ ...s, born, babyName: name.trim(), sample: false, babyTheme: arriving ? null : s.babyTheme }));
     onClose();
     if (arriving) onArrived(from);
   };
   const undo = () => {
-    update((s) => ({ ...s, born: null }));
+    // Forget any look picked after birth, so the next arrival follows the pregnancy look again.
+    update((s) => ({ ...s, born: null, babyTheme: null }));
     onClose();
   };
 

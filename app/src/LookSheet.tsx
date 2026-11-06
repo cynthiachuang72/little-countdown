@@ -18,7 +18,8 @@ export function LookPicker() {
   const list = born ? BABY_LOOKS : PREGNANCY_LOOKS;
 
   const choose = (name: LookName) =>
-    update((s) => (born ? { ...s, babyTheme: name } : { ...s, theme: name }));
+    // A look picked after birth only lasts while baby is here; picking a pregnancy look resets it.
+    update((s) => (born ? { ...s, babyTheme: name } : { ...s, theme: name, babyTheme: null }));
 
   return (
     <View style={{ gap: 10 }}>
@@ -42,7 +43,7 @@ export function LookPicker() {
                     <View style={[s.swatch, { backgroundColor: pc.sageSoft }]}><T style={{ color: pc.sage, fontFamily: FONTS.calm.display, fontSize: 18 }}>53</T></View>
                   </View>
                 ) : (
-                  <LookArt look={name} week={30} months={4} night={name === "sky" && isNight()} bg={pc.surface} width={110} height={66} />
+                  <LookArt look={name} week={30} months={4} night={(name === "sky" || name === "starlight") && isNight()} bg={pc.surface} width={110} height={66} />
                 )}
               </View>
               <T style={{ fontFamily: FONTS[name].display, fontSize: 17, lineHeight: 22, color: pc.ink }}>{LOOK_INFO[name].label}{on ? "  ✓" : ""}</T>

@@ -72,7 +72,8 @@ export function normalize(raw: unknown): State {
       : Object.keys(r.joys || {}).filter((k) => (r.joys as Record<string, JoyRecord>)[k]?.d),
     reminder: { ...base.reminder, ...(r.reminder || {}) },
     theme: PREGNANCY_LOOKS.includes(r.theme as LookName) ? (r.theme as LookName) : "calm",
-    babyTheme: BABY_LOOKS.includes(r.babyTheme as LookName) ? (r.babyTheme as LookName) : null,
+    // Only kept while baby is here; during pregnancy the after-birth look always comes from the story.
+    babyTheme: r.born && BABY_LOOKS.includes(r.babyTheme as LookName) ? (r.babyTheme as LookName) : null,
     born: typeof r.born === "string" ? r.born : null,
     babyName: typeof r.babyName === "string" ? r.babyName : "",
     v: 1,

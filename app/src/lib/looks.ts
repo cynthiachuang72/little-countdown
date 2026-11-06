@@ -1,18 +1,19 @@
 // Every look's colors and fonts. Pure data, shared by the app and the Android widget.
 // The iPhone widget has the same table in Swift (targets/widget/LittleCountdownWidget.swift).
 
-export type LookName = "calm" | "bloom" | "nest" | "sky" | "storybook" | "friend";
+export type LookName = "calm" | "bloom" | "nest" | "sky" | "storybook" | "friend" | "starlight";
 export const PREGNANCY_LOOKS: LookName[] = ["calm", "bloom", "nest", "sky"];
-export const BABY_LOOKS: LookName[] = ["calm", "storybook", "friend"];
+export const BABY_LOOKS: LookName[] = ["calm", "storybook", "friend", "starlight"];
 
 /** The story: what each pregnancy look becomes after "Baby is here!". */
 export const STORY: Record<LookName, LookName> = {
   calm: "calm",
   bloom: "storybook",
   nest: "friend",
-  sky: "storybook",
+  sky: "starlight",
   storybook: "storybook",
   friend: "friend",
+  starlight: "starlight",
 };
 
 export type Palette = {
@@ -71,7 +72,8 @@ export function isNight(now: Date = new Date()): boolean {
 
 /** Colors for a look. Sky uses the time of day; the rest follow the phone's light or dark mode. */
 export function paletteFor(look: LookName, born: boolean, darkMode: boolean, now: Date = new Date()): { c: Palette; dark: boolean } {
-  if (look === "sky") {
+  // Sky and Starlight follow the time of day instead of the phone's dark mode.
+  if (look === "sky" || look === "starlight") {
     const night = isNight(now);
     return { c: night ? PALETTES.sky.dark : PALETTES.sky.light, dark: night };
   }
@@ -87,6 +89,7 @@ export const FONTS: Record<LookName, FontSet> = {
   bloom: { display: "YoungSerif_400Regular", ...NUNITO },
   nest: { display: "Fredoka_600SemiBold", ...NUNITO },
   sky: { display: "Fredoka_600SemiBold", ...NUNITO },
+  starlight: { display: "Fredoka_600SemiBold", ...NUNITO },
   storybook: { display: "Gaegu_700Bold", ...NUNITO },
   friend: { display: "Fredoka_600SemiBold", ...NUNITO },
 };
@@ -96,6 +99,7 @@ export const LOOK_INFO: Record<LookName, { label: string; note: string }> = {
   bloom: { label: "Bloom", note: "A flower grows week by week" },
   nest: { label: "Little nest", note: "An egg waits in a cozy nest" },
   sky: { label: "Sky", note: "Sun by day, stars at night" },
+  starlight: { label: "Starlight", note: "A new star for every month" },
   storybook: { label: "Storybook", note: "Clouds and a little seedling" },
   friend: { label: "Little friend", note: "A chick who cheers you on" },
 };
