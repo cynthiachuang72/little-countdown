@@ -59,7 +59,7 @@ export default function Hero({ look, week, months, next, babyName, bd, joys = 0,
     hint = night ? "Tap for a shooting star" : "Tap the sun";
   } else if (look === "storybook") {
     caption = storybookCaption(months);
-    hint = "Tap to water the seedling";
+    hint = "Tap to water the flower";
   } else if (look === "starlight") {
     caption = starlightCaption(months, night, babyName);
     hint = night ? "Tap for a shooting star" : "Tap the little star";

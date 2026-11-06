@@ -223,9 +223,10 @@ export function SkyArt({ night, bg, ...p }: Props & { night: boolean; bg: string
 
 // ---------------------------------------------------------------- Storybook (after birth)
 export function storybookCaption(months: number): string {
-  if (months < 1) return "A brand-new seedling";
-  if (months < 6) return "Growing a little every day";
-  if (months < 12) return "Getting taller and stronger";
+  if (months < 1) return "Still in bloom, in a brand-new pot";
+  if (months < 4) return "Growing a little every day";
+  if (months < 8) return "A second flower has opened";
+  if (months < 12) return "Getting taller, with three flowers now";
   if (months < 13) return "A whole year of growing";
   if (months < 24) return "Planted in the garden, still in bloom";
   if (months < 36) return "A little flowering tree, taller every season";
@@ -299,17 +300,30 @@ export function StoryCloudA() { return <Cloud x={42} y={30} s={0.9} />; }
 export function StoryCloudB() { return <Cloud x={160} y={44} s={0.75} />; }
 export function StoryPlant({ months }: { months: number }) {
   if (months > 12) return <StoryTree months={months} />;
+  // The flower from Bloom moves into its own little pot and keeps blooming; new flowers open at 4 and 8 months.
   const m = clamp(months, 0, 12);
-  const top = 82 - m * 3.6; // stem gets taller each month
+  const top = 70 - m * 2.6; // stem gets taller each month
   const pairs = 1 + Math.floor(m / 4);
   return (
     <G>
       <Path d={`M 100 92 Q 97 ${(92 + top) / 2} 100 ${top}`} stroke="#5FA57E" strokeWidth={3} fill="none" strokeLinecap="round" />
       {Array.from({ length: pairs }).map((_, i) => {
-        const y = 88 - i * 12;
+        const y = 88 - i * 10;
         return <G key={i}><Leaf x={100} y={y} size={0.7 - i * 0.08} /><Leaf x={100} y={y - 2} size={0.7 - i * 0.08} flip /></G>;
       })}
-      {m >= 12 ? <Flower x={100} y={top - 4} open={2} /> : null}
+      {m >= 4 ? (
+        <G>
+          <Path d={`M 99 ${top + 26} Q 90 ${top + 20} 84 ${top + 16}`} stroke="#5FA57E" strokeWidth={2} fill="none" strokeLinecap="round" />
+          <MiniFlower x={82} y={top + 14} s={0.5} />
+        </G>
+      ) : null}
+      {m >= 8 ? (
+        <G>
+          <Path d={`M 101 ${top + 18} Q 110 ${top + 13} 117 ${top + 8}`} stroke="#5FA57E" strokeWidth={2} fill="none" strokeLinecap="round" />
+          <MiniFlower x={119} y={top + 6} s={0.5} />
+        </G>
+      ) : null}
+      <Flower x={100} y={top - 4} open={2} />
     </G>
   );
 }
