@@ -18,7 +18,8 @@ export function LookPicker() {
   const list = born ? BABY_LOOKS : PREGNANCY_LOOKS;
 
   const choose = (name: LookName) =>
-    update((s) => (born ? { ...s, babyTheme: name } : { ...s, theme: name }));
+    // A look picked after birth only lasts while baby is here; picking a pregnancy look resets it.
+    update((s) => (born ? { ...s, babyTheme: name } : { ...s, theme: name, babyTheme: null }));
 
   return (
     <View style={{ gap: 10 }}>
