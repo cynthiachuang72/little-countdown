@@ -273,7 +273,7 @@ function StoryTree({ months }: { months: number }) {
       ))}
       {/* The flower from the first year keeps blooming: one big flower on top, and more small ones each year. */}
       {BLOSSOMS.slice(0, 2 + Math.floor((months - 12) / 12) * 2).map(([dx, dy], i) => (
-        <MiniFlower key={i} x={100 + dx * R} y={cy + dy * R} s={0.45 + g * 0.1} />
+        <G key={i}><MiniFlower x={100 + dx * R} y={cy + dy * R} s={0.45 + g * 0.1} /></G>
       ))}
       <MiniFlower x={100} y={cy - R * 0.55} s={0.7 + g * 0.15} />
     </G>
