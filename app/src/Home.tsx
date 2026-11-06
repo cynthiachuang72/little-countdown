@@ -10,6 +10,7 @@ import { AddAppointment, NextAppointment } from "./Appointments";
 import BabyHere from "./BabyHere";
 import Celebration from "./Celebration";
 import Hero from "./Hero";
+import { BreathingDot, CountUp } from "./scenes";
 import LookSheet from "./LookSheet";
 import type { LookName } from "./lib/looks";
 import Settings from "./Settings";
@@ -154,7 +155,7 @@ export default function Home() {
           <Pressable onPress={() => setBabyOpen(true)} accessibilityRole="button" accessibilityLabel="Change baby's birthday or name" style={{ flexDirection: "row", gap: 12 }}>
             <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
               <T v="label">{state.babyName ? `${state.babyName} is` : "Baby is"}</T>
-              <T v="display" color="rose">{age!.num}</T>
+              <T v="display" color="rose"><CountUp value={age!.num} animate={look === "calm"} /></T>
               <T v="strong">{age!.unit}</T>
               <T v="small">{age!.extra || `Born ${fmt(born!)}`}</T>
             </Card>
@@ -162,7 +163,7 @@ export default function Home() {
               <T v="label">Next milestone</T>
               {next ? (
                 <>
-                  <T v="display" color="sage">{diff(t, next.date)}</T>
+                  <T v="display" color="sage"><CountUp value={diff(t, next.date)} animate={look === "calm"} /></T>
                   <T v="strong">{diff(t, next.date) === 0 ? "it's today!" : `${plural(diff(t, next.date), "day")} to go`}</T>
                   <T v="small">{next.title} · {fmt(next.date)}</T>
                 </>
@@ -179,13 +180,13 @@ export default function Home() {
           <Pressable onPress={() => setSettingsOpen(true)} accessibilityRole="button" accessibilityLabel="Change your dates" style={{ flexDirection: "row", gap: 12 }}>
             <Card tone="roseSoft" style={[s.count, { overflow: "hidden" }]}>
               <T v="label">Baby arrives</T>
-              <T v="display" color="rose">{bd}</T>
+              <T v="display" color="rose"><CountUp value={bd} animate={look === "calm"} /></T>
               <T v="strong">{bd === 0 ? "today could be the day" : plural(bd, "day")}</T>
               <T v="small">Due {fmt(due)} · {Math.floor(bd / 7)}w {bd % 7}d</T>
             </Card>
             <Card tone="sageSoft" style={[s.count, { overflow: "hidden" }]}>
               <T v="label">Leave starts</T>
-              <T v="display" color="sage">{Math.max(0, ld)}</T>
+              <T v="display" color="sage"><CountUp value={Math.max(0, ld)} animate={look === "calm"} /></T>
               <T v="strong">{ld <= 0 ? "you're on leave" : plural(ld, "day")}</T>
               <T v="small">
                 {ld > 0 ? `${fmt(leave)} · ${wd.n} ${plural(wd.n, "workday")} left${wd.skipped ? ` after ${wd.skipped} off` : ""}` : "since " + fmt(leave)}
@@ -225,7 +226,7 @@ export default function Home() {
               <View style={{ marginTop: 14, marginBottom: 2 }}>
                 <View style={[s.track, { backgroundColor: c.bg }]}>
                   <View style={[s.fill, { width: `${yearPct}%`, backgroundColor: c.rose }]} />
-                  <View style={[s.pin, { left: `${yearPct}%`, backgroundColor: c.ink, borderColor: c.surface }]} />
+                  <BreathingDot run={look === "calm"} style={[s.pin, { left: `${yearPct}%`, backgroundColor: c.ink, borderColor: c.surface }]} />
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
                   {["Birth", "3 mo", "6 mo", "9 mo", "1 year"].map((x) => <T key={x} v="small" style={{ fontSize: 12 }}>{x}</T>)}
@@ -252,7 +253,7 @@ export default function Home() {
               <View style={[s.track, { backgroundColor: c.bg }]}>
                 <View style={[s.fill, { width: `${pct(t)}%`, backgroundColor: c.rose }]} />
                 <View style={[s.pin, { left: `${pct(leave)}%`, backgroundColor: c.sage, borderColor: c.surface }]} />
-                <View style={[s.pin, { left: `${pct(t)}%`, backgroundColor: c.ink, borderColor: c.surface }]} />
+                <BreathingDot run={look === "calm"} style={[s.pin, { left: `${pct(t)}%`, backgroundColor: c.ink, borderColor: c.surface }]} />
               </View>
               <View style={{ flexDirection: "row", marginTop: 10 }}>
                 {["1st trimester", "2nd", "3rd"].map((x) => <T key={x} v="small" style={{ flex: 1, textAlign: "center", fontSize: 12 }}>{x}</T>)}
