@@ -227,9 +227,9 @@ export function storybookCaption(months: number): string {
   if (months < 6) return "Growing a little every day";
   if (months < 12) return "Getting taller and stronger";
   if (months < 13) return "A whole year of growing";
-  if (months < 24) return "Planted in the garden, growing into a little tree";
-  if (months < 36) return "A little tree, taller every season";
-  return "A tree with a swing to play on";
+  if (months < 24) return "Planted in the garden, still in bloom";
+  if (months < 36) return "A little flowering tree, taller every season";
+  return "A flowering tree with a swing to play on";
 }
 const STORY_POT_PIVOT: [number, number] = [100, 92];
 const TREE_BASE: [number, number] = [100, 104];
@@ -271,6 +271,26 @@ function StoryTree({ months }: { months: number }) {
       {[[-0.4, -0.3], [0.35, -0.45], [0.1, 0.15], [-0.75, 0.35], [0.8, 0.3], [-0.1, -0.7], [0.55, 0.05]].map(([dx, dy], i) => (
         <Circle key={i} cx={100 + dx * R} cy={cy + dy * R} r={2.2 + g} fill={dots} />
       ))}
+      {/* The flower from the first year keeps blooming: one big flower on top, and more small ones each year. */}
+      {BLOSSOMS.slice(0, 2 + Math.floor((months - 12) / 12) * 2).map(([dx, dy], i) => (
+        <MiniFlower key={i} x={100 + dx * R} y={cy + dy * R} s={0.45 + g * 0.1} />
+      ))}
+      <MiniFlower x={100} y={cy - R * 0.55} s={0.7 + g * 0.15} />
+    </G>
+  );
+}
+
+const BLOSSOMS: [number, number][] = [[-0.55, -0.05], [0.6, -0.15], [-0.15, 0.4], [0.3, 0.45], [-0.85, 0.5], [0.85, 0.55], [-0.45, -0.6], [0.45, -0.7], [0, 0.05], [-0.25, -0.25]];
+
+/** A small version of the year-one flower, for the tree. */
+function MiniFlower({ x, y, s }: { x: number; y: number; s: number }) {
+  return (
+    <G>
+      {Array.from({ length: 6 }).map((_, i) => {
+        const a = (i * 60 * Math.PI) / 180;
+        return <Circle key={i} cx={x + Math.cos(a) * 9 * s} cy={y + Math.sin(a) * 9 * s} r={7 * s} fill="#F4A7B9" />;
+      })}
+      <Circle cx={x} cy={y} r={5.5 * s} fill="#FFE08A" />
     </G>
   );
 }
